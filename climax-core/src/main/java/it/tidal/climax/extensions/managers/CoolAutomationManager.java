@@ -30,6 +30,7 @@ public class CoolAutomationManager {
         this.deviceIpAddress = deviceIpAddress;
         this.devicePort = devicePort;
         this.lineId = lineId;
+        this.telnet = null;
     }
 
     public static CoolAutomationManager getInstance(CoolAutomationDeviceConfig device) {
@@ -219,6 +220,11 @@ public class CoolAutomationManager {
 
         disconnect();
 
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ex) {
+        }
+
         if (!ok) {
             return null;
         }
@@ -261,7 +267,7 @@ public class CoolAutomationManager {
         if (ok && !data.getOpMode().equals(opMode)) {
 
             try {
-                Thread.sleep(250);
+                Thread.sleep(500);
             } catch (InterruptedException ex) {
             }
 
@@ -273,7 +279,7 @@ public class CoolAutomationManager {
         if (ok && !data.getFanSpeed().equals(fanSpeed)) {
 
             try {
-                Thread.sleep(250);
+                Thread.sleep(500);
             } catch (InterruptedException ex) {
             }
 
@@ -286,7 +292,7 @@ public class CoolAutomationManager {
         if (ok && !prevTargetTemperature.equals(targetTemperature)) {
 
             try {
-                Thread.sleep(250);
+                Thread.sleep(500);
             } catch (InterruptedException ex) {
             }
 
@@ -299,7 +305,7 @@ public class CoolAutomationManager {
         if (ok && !data.getStatus().equals(status)) {
 
             try {
-                Thread.sleep(250);
+                Thread.sleep(500);
             } catch (InterruptedException ex) {
             }
 
@@ -309,6 +315,11 @@ public class CoolAutomationManager {
         }
 
         disconnect();
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ex) {
+        }
 
         if (ok) {
 
