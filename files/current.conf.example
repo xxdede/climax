@@ -1,0 +1,49 @@
+{
+  "majNumber": 0,
+  "minNumber": 2,
+  "revNumber": 1,
+  "installationName": "MyHome",
+  "alwaysConfigure": true,
+  "skipActions": true,
+  "solarEdge": {
+    "url": "https://monitoringapi.solaredge.com",
+    "key": "<KEY>",
+    "site": "<SITE-ID>"
+  },
+  "mySQL": {
+    "host": "<IP-ADDRESS>",
+    "port": 3306,
+    "database": "<DATABASE>",
+    "username": "<USERNAME>",
+    "password": "<PASSWORD>"
+  },
+  "netAtmo": {
+    "username":     "<USERNAME>",
+    "password":     "<PASSWORD>",
+    "clientId":     "<CLIENT-ID>",
+    "clientSecret": "<CLIENT-SECRET>",
+    "scope":        "read_station read_thermostat"
+  },
+  "coolAutomation": {
+    "devices": [
+      {
+        "name":      "<DEVICE-1>",
+        "ipAddress": "<IP-ADDRESS>",
+        "port":      10102,
+        "lineId":    "L4",
+        "airIntake": {
+          "status": "CLOSED"
+        }
+      },
+      {
+        "name":      "<DEVICE-2>",
+        "ipAddress": "<IP-ADDRESS>",
+        "port":      10102,
+        "lineId":    "L4",
+        "airIntake": {
+          "status": "CLOSED"
+        }
+      }
+    ]
+  }
+}
