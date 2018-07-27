@@ -72,7 +72,7 @@ public class SolarEdgeManager {
     public SolarEdgeEnergy getEnergyDetails(long endTs) {
 
         final LocalDateTime end = LocalDateTime.
-                ofInstant(Instant.ofEpochMilli(endTs), ZoneId.systemDefault());
+                ofInstant(Instant.ofEpochSecond(endTs), ZoneId.systemDefault());
 
         return getEnergyDetails(end);
     }
@@ -80,10 +80,10 @@ public class SolarEdgeManager {
     public SolarEdgeEnergy getEnergyDetails(long startTs, long endTs) {
 
         final LocalDateTime end = LocalDateTime.
-                ofInstant(Instant.ofEpochMilli(endTs), ZoneId.systemDefault());
+                ofInstant(Instant.ofEpochSecond(endTs), ZoneId.systemDefault());
 
         final LocalDateTime start = LocalDateTime.
-                ofInstant(Instant.ofEpochMilli(startTs), ZoneId.systemDefault());
+                ofInstant(Instant.ofEpochSecond(startTs), ZoneId.systemDefault());
 
         return getEnergyDetails(start, end);
     }

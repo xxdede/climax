@@ -109,8 +109,8 @@ public class DatabaseManager {
         sql.append(")");
         values.append(")");
         sql.append(" VALUES ").append(values);
-        //l.debug(sql.toString());
 
+        //l.debug(sql.toString());
         persist.execute(sql.toString());
     }
 
@@ -162,8 +162,8 @@ public class DatabaseManager {
         sql.append(")");
         values.append(")");
         sql.append(" VALUES ").append(values);
-        //l.debug(sql.toString());
 
+        //l.debug(sql.toString());
         persist.execute(sql.toString());
     }
 
@@ -180,7 +180,9 @@ public class DatabaseManager {
 
             // Check if value is already stored
             if (persist.read(Long.class, "SELECT COUNT(*) FROM `solar_edge_energy`"
-                    + " WHERE `time_sec` = ?", energy.getFirstTimestamp()) != 0) {
+                    + " WHERE `time_sec` = ?", ts) != 0) {
+                l.info("Database already contain SolarEdge data for timestamp "
+                        + ts + ", skipping...");
                 continue;
             }
 
@@ -227,10 +229,9 @@ public class DatabaseManager {
             sql.append(")");
             values.append(")");
             sql.append(" VALUES ").append(values);
+
             //l.debug(sql.toString());
-
             persist.execute(sql.toString());
-
         }
     }
 
