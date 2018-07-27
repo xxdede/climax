@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.TreeMap;
 
 /**
  * SolarEdge Energy Extensions. Contains energy details.
@@ -71,7 +73,7 @@ public class SolarEdgeEnergy implements Serializable {
         return 0;
     }
 
-    public Long getTimestamp() {
+    public Long getFirstTimestamp() {
 
         for (SolarEdgeMeter m : meters) {
             if (m.getValues() != null && !m.getValues().isEmpty()) {
@@ -83,5 +85,35 @@ public class SolarEdgeEnergy implements Serializable {
         }
 
         return null;
+    }
+
+    public TreeMap<Long, HashMap<SolarEdge.MeterType, Double>> getEnergyMultiMap() {
+
+        final TreeMap<Long, HashMap<SolarEdge.MeterType, Double>> ret;
+
+        ret = new TreeMap<>();
+
+        // Find all timestamp (i.e. the keys)
+        for (SolarEdgeMeter m : meters) {
+            if (m.getValues() != null && m.getValues() != null) {
+                for (SolarEdgeValue v : m.getValues()) {
+
+                    final long ts = LocalDateTime.parse(v.getDate(), SolarEdge.dateFormatter)
+                            .atZone(ZoneId.systemDefault()).toEpochSecond();
+
+                    HashMap<SolarEdge.MeterType, Double> subMap = ret.get(ts);
+
+                    if (subMap == null) {
+
+                        subMap = new HashMap<>(5);
+                        ret.put(ts, subMap);
+                    }
+
+                    subMap.put(m.getType(), v.getValue());
+                }
+            }
+        }
+
+        return ret;
     }
 }

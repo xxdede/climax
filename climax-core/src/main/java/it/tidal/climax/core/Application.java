@@ -182,7 +182,7 @@ public class Application {
             sm = SolarEdgeManager.getInstance(config.getSolarEdge());
 
             energy = sm.getEnergyDetails(NOW);
-            l.debug("Collected values with ts " + energy.getTimestamp());
+            l.debug("Collected values with ts " + energy.getFirstTimestamp());
 
         } catch (Exception ex) {
 

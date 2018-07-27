@@ -173,7 +173,7 @@ public class DatabaseManager {
 
         // Check if value is already stored
         if (persist.read(Long.class, "SELECT COUNT(*) FROM `solar_edge_energy`"
-                + " WHERE `time_sec` = ?", energy.getTimestamp()) != 0) {
+                + " WHERE `time_sec` = ?", energy.getFirstTimestamp()) != 0) {
             return;
         }
 
@@ -182,7 +182,7 @@ public class DatabaseManager {
         StringBuilder values = new StringBuilder(64);
 
         sql.append("INSERT INTO `solar_edge_energy` (`time_sec`");
-        values.append("(").append(energy.getTimestamp());
+        values.append("(").append(energy.getFirstTimestamp());
 
         tempValue = energy.getMeter(SolarEdge.MeterType.Production);
         sql.append(",`production`");
