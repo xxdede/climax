@@ -1,0 +1,15 @@
+# macOS temp files
+\.DS_Store
+\.DS_Store?
+\._*
+\.Spotlight-V100
+\.Trashes
+ehthumbs\.db
+Thumbs\.db
+
+# Project compiled sources
+/climax-core/target/
+/climax-core/nbactions\.xml
+
+# Configuration files
+/files/*\.conf
