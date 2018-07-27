@@ -77,7 +77,23 @@ public class SolarEdgeManager {
         return getEnergyDetails(end);
     }
 
+    public SolarEdgeEnergy getEnergyDetails(long startTs, long endTs) {
+
+        final LocalDateTime end = LocalDateTime.
+                ofInstant(Instant.ofEpochMilli(endTs), ZoneId.systemDefault());
+
+        final LocalDateTime start = LocalDateTime.
+                ofInstant(Instant.ofEpochMilli(startTs), ZoneId.systemDefault());
+
+        return getEnergyDetails(start, end);
+    }
+
     public SolarEdgeEnergy getEnergyDetails(LocalDateTime end) {
+
+        return getEnergyDetails(null, end);
+    }
+
+    public SolarEdgeEnergy getEnergyDetails(LocalDateTime start, LocalDateTime end) {
 
         final String fullUrl = composeUrl() + "energyDetails";
         final LocalDateTime aStart, aEnd;
@@ -88,7 +104,13 @@ public class SolarEdgeManager {
 
             aEnd = end.withMinute(getAlignedMinute(end.getMinute()))
                     .withSecond(0).withNano(0);
-            aStart = aEnd.minusMinutes(15);
+
+            if (start != null) {
+                aStart = start.withMinute(getAlignedMinute(start.getMinute()))
+                        .withSecond(0).withNano(0);
+            } else {
+                aStart = aEnd.minusMinutes(15);
+            }
 
             HttpResponse<JsonNode> jsonResponse = Unirest.get(fullUrl)
                     .header("accept", "application/json")

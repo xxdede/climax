@@ -126,14 +126,29 @@ public class Application {
 
         } else if ("log-solaredge".equalsIgnoreCase(program)) {
 
-            l.info("Climax {} ({}) storing SolarEdgeValues {}.",
+            Long start = null;
+            Long end = null;
+
+            if (args.length > 3) {
+
+                start = Long.parseLong(args[2]);
+                end = Long.parseLong(args[3]);
+
+                if (start > end) {
+                    throw new IllegalArgumentException("Start ts (" + start
+                            + ") must precede end ts (" + end + ").");
+                }
+            }
+
+            l.info("Climax {} ({}) storing SolarEdgeValues {} {}.",
                     config.getVersion(),
                     APPLICATION_BUILD,
-                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(NOW));
+                    (start != null ? "" + start + " - " + end : ""),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(NOW)
+            );
 
             // Disable all
-            onlyLogSolarEdge(config);
-
+            onlyLogSolarEdge(config, start, end);
         }
     }
 
@@ -172,7 +187,7 @@ public class Application {
         operateShutdown(config, cadc1, cam1, piano1Data, true);
     }
 
-    private static void onlyLogSolarEdge(Config config) {
+    private static void onlyLogSolarEdge(Config config, Long s, Long e) {
 
         SolarEdgeEnergy energy = null;
 
@@ -181,8 +196,19 @@ public class Application {
             final SolarEdgeManager sm;
             sm = SolarEdgeManager.getInstance(config.getSolarEdge());
 
-            energy = sm.getEnergyDetails(NOW);
-            l.debug("Collected values with ts " + energy.getFirstTimestamp());
+            if (s == null || e == null) {
+
+                energy = sm.getEnergyDetails(NOW);
+                l.debug("Collected values with ts "
+                        + energy.getFirstTimestamp() + ".");
+            } else {
+
+                energy = sm.getEnergyDetails(s, e);
+
+                final int tot = energy.getMeters().size();
+                l.debug("Collected " + tot + " value"
+                        + (tot != 1 ? "s." : "."));
+            }
 
         } catch (Exception ex) {
 

@@ -10,6 +10,8 @@ import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.HashMap;
+import java.util.TreeMap;
 import net.sf.persist.Persist;
 
 /**
@@ -171,45 +173,65 @@ public class DatabaseManager {
             return;
         }
 
-        // Check if value is already stored
-        if (persist.read(Long.class, "SELECT COUNT(*) FROM `solar_edge_energy`"
-                + " WHERE `time_sec` = ?", energy.getFirstTimestamp()) != 0) {
-            return;
+        TreeMap<Long, HashMap<SolarEdge.MeterType, Double>> mmap;
+        mmap = energy.getEnergyMultiMap();
+
+        for (Long ts : mmap.keySet()) {
+
+            // Check if value is already stored
+            if (persist.read(Long.class, "SELECT COUNT(*) FROM `solar_edge_energy`"
+                    + " WHERE `time_sec` = ?", energy.getFirstTimestamp()) != 0) {
+                continue;
+            }
+
+            HashMap<SolarEdge.MeterType, Double> map;
+            map = mmap.get(ts);
+
+            Double tempValue;
+            StringBuilder sql = new StringBuilder(64);
+            StringBuilder values = new StringBuilder(64);
+
+            sql.append("INSERT INTO `solar_edge_energy` (`time_sec`");
+            values.append("(").append(ts);
+
+            tempValue = map.get(SolarEdge.MeterType.Production);
+            if (tempValue != null) {
+                sql.append(",`production`");
+                values.append(",").append(tempValue);
+            }
+
+            tempValue = map.get(SolarEdge.MeterType.Consumption);
+            if (tempValue != null) {
+                sql.append(",`consumption`");
+                values.append(",").append(tempValue);
+            }
+
+            tempValue = map.get(SolarEdge.MeterType.SelfConsumption);
+            if (tempValue != null) {
+                sql.append(",`self_consumption`");
+                values.append(",").append(tempValue);
+            }
+
+            tempValue = map.get(SolarEdge.MeterType.FeedIn);
+            if (tempValue != null) {
+                sql.append(",`feed_in`");
+                values.append(",").append(tempValue);
+            }
+
+            tempValue = map.get(SolarEdge.MeterType.Purchased);
+            if (tempValue != null) {
+                sql.append(",`purchased`");
+                values.append(",").append(tempValue);
+            }
+
+            sql.append(")");
+            values.append(")");
+            sql.append(" VALUES ").append(values);
+            //l.debug(sql.toString());
+
+            persist.execute(sql.toString());
+
         }
-
-        Double tempValue;
-        StringBuilder sql = new StringBuilder(64);
-        StringBuilder values = new StringBuilder(64);
-
-        sql.append("INSERT INTO `solar_edge_energy` (`time_sec`");
-        values.append("(").append(energy.getFirstTimestamp());
-
-        tempValue = energy.getMeter(SolarEdge.MeterType.Production);
-        sql.append(",`production`");
-        values.append(",").append(tempValue);
-
-        tempValue = energy.getMeter(SolarEdge.MeterType.Consumption);
-        sql.append(",`consumption`");
-        values.append(",").append(tempValue);
-
-        tempValue = energy.getMeter(SolarEdge.MeterType.SelfConsumption);
-        sql.append(",`self_consumption`");
-        values.append(",").append(tempValue);
-
-        tempValue = energy.getMeter(SolarEdge.MeterType.FeedIn);
-        sql.append(",`feed_in`");
-        values.append(",").append(tempValue);
-
-        tempValue = energy.getMeter(SolarEdge.MeterType.Purchased);
-        sql.append(",`purchased`");
-        values.append(",").append(tempValue);
-
-        sql.append(")");
-        values.append(")");
-        sql.append(" VALUES ").append(values);
-        //l.debug(sql.toString());
-
-        persist.execute(sql.toString());
     }
 
     public void dispose() {
