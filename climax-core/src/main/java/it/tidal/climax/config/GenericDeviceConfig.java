@@ -1,7 +1,6 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
-import it.tidal.config.utils.DeviceFamily;
 import java.io.Serializable;
 
 public class GenericDeviceConfig implements Serializable {
@@ -28,12 +27,14 @@ public class GenericDeviceConfig implements Serializable {
 
     public enum Role {
 
+        @SerializedName("none")
+        NONE(0),
         @SerializedName("outside-temperature-provider")
-        OUTSIDE_TEMPERATURE_PROVIDER(0),
+        OUTSIDE_TEMPERATURE_PROVIDER(1),
         @SerializedName("inside-temperature-provider")
-        INSIDE_TEMPERATURE_PROVIDER(1),
+        INSIDE_TEMPERATURE_PROVIDER(2),
         @SerializedName("intake-temperature-provider")
-        INTAKE_TEMPERATURE_PROVIDER(2),
+        INTAKE_TEMPERATURE_PROVIDER(3),
         @SerializedName("intake-actuator")
         INTAKE_ACTUATOR(3);
 
@@ -46,17 +47,8 @@ public class GenericDeviceConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private DeviceFamily family;
     private String name;
     private Role role;
-
-    public DeviceFamily getFamily() {
-        return family;
-    }
-
-    public void setFamily(DeviceFamily family) {
-        this.family = family;
-    }
 
     public String getName() {
         return name;

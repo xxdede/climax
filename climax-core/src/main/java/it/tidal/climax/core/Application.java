@@ -1,6 +1,7 @@
 package it.tidal.climax.core;
 
 import it.tidal.climax.config.Config;
+import it.tidal.climax.config.CoolAutomationDeviceConfig;
 import it.tidal.climax.extensions.managers.ConfigManager;
 import it.tidal.logging.Log;
 import java.io.File;
@@ -54,9 +55,12 @@ public class Application {
             return;
         }
 
-        // DEBUG
-        //l.info("Config read: " + Utility.prettyJson(config));
-        l.info(ConfigManager.suitableOperationMode(config, "P0", NOW).toString());
+        // DEBUG: cycle all CoolAutomation devices and print their desired operation mode
+        for (CoolAutomationDeviceConfig dev : config.getCoolAutomation().getDevices()) {
+
+            l.info("Device \"" + dev.getName() + "\" (" + dev.getDeviceFamily() + ") = "
+                    + ConfigManager.suitableOperationMode(config, dev.getName(), NOW));
+        }
 
         /*
         String program = "standard";
