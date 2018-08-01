@@ -2,8 +2,9 @@ package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
 import it.tidal.config.utils.DeviceFamily;
+import java.io.Serializable;
 
-public class GenericDeviceConfig {
+public class GenericDeviceConfig implements Serializable {
 
     public enum Role {
 

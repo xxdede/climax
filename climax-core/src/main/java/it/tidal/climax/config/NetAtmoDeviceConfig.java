@@ -1,8 +1,9 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
 
-public class NetAtmoDeviceConfig {
+public class NetAtmoDeviceConfig implements Serializable {
 
     public enum Type {
 

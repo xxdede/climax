@@ -72,7 +72,5 @@ public class Application {
         if (args.length > 1) {
             program = args[1];
         }
-
     }
-
 }

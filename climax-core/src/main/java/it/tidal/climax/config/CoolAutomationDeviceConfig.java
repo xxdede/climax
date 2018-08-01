@@ -1,9 +1,10 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
 import java.util.List;
 
-public class CoolAutomationDeviceConfig {
+public class CoolAutomationDeviceConfig implements Serializable {
 
     public enum Status {
 
