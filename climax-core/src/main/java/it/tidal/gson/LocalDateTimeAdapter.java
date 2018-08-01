@@ -15,7 +15,7 @@ import java.time.format.DateTimeParseException;
 public class LocalDateTimeAdapter implements JsonSerializer<LocalDateTime>, JsonDeserializer<LocalDateTime> {
 
     @Override
-    public JsonElement serialize(LocalDateTime dt, Type typeOfSrc, JsonSerializationContext context) {
+    public JsonElement serialize(LocalDateTime dt, Type type, JsonSerializationContext context) {
 
         return new JsonPrimitive(dt.format(Utility.basicDateTimeFormatter));
     }

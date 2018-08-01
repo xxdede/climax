@@ -1,6 +1,7 @@
 package it.tidal.climax.config;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Configuration file. This class contains config params and other stuff.
@@ -21,7 +22,7 @@ public class Config implements Serializable {
 
     private String installationName = "example";
 
-    //private Object operationMode;
+    private List<ProgramConfig> programs;
     private MySQLConfig mySQL = null;
     private SolarEdgeConfig solarEdge = null;
     private NetAtmoConfig netAtmo = null;
@@ -125,5 +126,4 @@ public class Config implements Serializable {
     public void setWemo(WemoConfig wemo) {
         this.wemo = wemo;
     }
-
 }

@@ -1,6 +1,7 @@
 package it.tidal.gson;
 
 import com.google.gson.GsonBuilder;
+import it.tidal.config.utils.Hour;
 import java.time.LocalDateTime;
 
 public class GsonFactory {
@@ -17,6 +18,8 @@ public class GsonFactory {
                 standardInstance = new GsonBuilder()
                         .registerTypeAdapter(LocalDateTime.class,
                                 new LocalDateTimeAdapter())
+                        .registerTypeAdapter(Hour.class,
+                                new HourAdapter())
                         .create();
             }
         }
@@ -33,6 +36,8 @@ public class GsonFactory {
                 prettyInstance = new GsonBuilder()
                         .registerTypeAdapter(LocalDateTime.class,
                                 new LocalDateTimeAdapter())
+                        .registerTypeAdapter(Hour.class,
+                                new HourAdapter())
                         .setPrettyPrinting()
                         .create();
             }

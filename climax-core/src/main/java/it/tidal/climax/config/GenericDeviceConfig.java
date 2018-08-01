@@ -6,6 +6,24 @@ import java.io.Serializable;
 
 public class GenericDeviceConfig implements Serializable {
 
+    public enum OperationMode {
+
+        @SerializedName("disabled")
+        DISABLED(0),
+        @SerializedName("enabled")
+        ENABLED(1),
+        @SerializedName("operate-auto")
+        OPERATE_AUTO(2),
+        @SerializedName("operate-if-on")
+        OPERATE_IF_ON(3);
+
+        private final int v;
+
+        private OperationMode(int v) {
+            this.v = v;
+        }
+    }
+
     public enum Role {
 
         @SerializedName("outside-temperature-provider")
