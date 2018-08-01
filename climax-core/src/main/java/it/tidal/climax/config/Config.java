@@ -23,11 +23,11 @@ public class Config implements Serializable {
     private String installationName = "example";
 
     private List<ProgramConfig> programs;
-    private MySQLConfig mySQL = null;
-    private SolarEdgeConfig solarEdge = null;
-    private NetAtmoConfig netAtmo = null;
-    private CoolAutomationConfig coolAutomation = null;
-    private WemoConfig wemo = null;
+    private MySQLConfig mySQL;
+    private SolarEdgeConfig solarEdge;
+    private NetAtmoConfig netAtmo;
+    private CoolAutomationConfig coolAutomation;
+    private WemoConfig wemo;
 
     public Config() {
 
@@ -85,6 +85,14 @@ public class Config implements Serializable {
 
     public void setInstallationName(String installationName) {
         this.installationName = installationName;
+    }
+
+    public List<ProgramConfig> getPrograms() {
+        return programs;
+    }
+
+    public void setPrograms(List<ProgramConfig> programs) {
+        this.programs = programs;
     }
 
     public MySQLConfig getMySQL() {
