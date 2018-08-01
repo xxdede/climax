@@ -1,6 +1,5 @@
 package it.tidal.climax.extensions.managers;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
@@ -10,6 +9,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import it.tidal.climax.config.NetAtmoConfig;
 import it.tidal.climax.extensions.data.NetAtmo;
+import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
 import java.io.File;
 import java.io.FileReader;
@@ -91,7 +91,7 @@ public class NetAtmoManager {
 
         try {
 
-            String output = new Gson().toJson(creds.toMap());
+            String output = GsonFactory.instance().toJson(creds.toMap());
             Files.write(Paths.get(TMP_CREDENTIALS_PATH), output.getBytes());
         } catch (IOException ex) {
 
@@ -114,7 +114,7 @@ public class NetAtmoManager {
             JsonReader reader = new JsonReader(new FileReader(file));
             Type t = new TypeToken<HashMap<String, Object>>() {
             }.getType();
-            HashMap<String, Object> map = new Gson().fromJson(reader, t);
+            HashMap<String, Object> map = GsonFactory.instance().fromJson(reader, t);
             return new NetAtmoManager(map);
         } catch (JsonSyntaxException | IOException ex) {
 

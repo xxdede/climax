@@ -1,8 +1,8 @@
 package it.tidal.config.utils;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -24,7 +24,7 @@ public class ConfigManager {
             l.debug("Reading configs from: {}", path);
 
             BufferedReader reader = new BufferedReader(new FileReader(path));
-            T object = new Gson().fromJson(reader, type);
+            T object = GsonFactory.instance().fromJson(reader, type);
 
             l.trace("Found config:\n{}", Log.json(object, true));
 

@@ -1,7 +1,7 @@
 package it.tidal.logging;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import it.tidal.gson.GsonFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +29,9 @@ public class Log {
         Gson gson = null;
 
         if (prettyPrint) {
-            gson = new GsonBuilder().setPrettyPrinting().create();
+            gson = GsonFactory.prettyInstance();
         } else {
-            gson = new Gson();
+            gson = GsonFactory.instance();
         }
 
         return gson.toJson(object);

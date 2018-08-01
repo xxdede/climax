@@ -1,6 +1,5 @@
 package it.tidal.climax.extensions.managers;
 
-import com.google.gson.Gson;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -8,6 +7,8 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import it.tidal.climax.config.SolarEdgeConfig;
 import it.tidal.climax.extensions.data.SolarEdge;
 import it.tidal.climax.extensions.data.SolarEdgeEnergy;
+import it.tidal.config.utils.Utility;
+import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -100,7 +101,7 @@ public class SolarEdgeManager {
 
         try {
 
-            final DateTimeFormatter dtf = SolarEdge.dateFormatter;
+            final DateTimeFormatter dtf = Utility.basicDateTimeFormatter;
 
             aEnd = end.withMinute(getAlignedMinute(end.getMinute()))
                     .withSecond(0).withNano(0);
@@ -124,7 +125,7 @@ public class SolarEdgeManager {
                     .getObject()
                     .getJSONObject("energyDetails");
 
-            return new Gson().fromJson(data.toString(), SolarEdgeEnergy.class);
+            return GsonFactory.instance().fromJson(data.toString(), SolarEdgeEnergy.class);
 
         } catch (UnirestException | JSONException ex) {
 

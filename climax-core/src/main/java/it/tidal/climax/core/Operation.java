@@ -417,7 +417,7 @@ public class Operation {
             String prev = Utility.readFile(statusPath);
 
             if (prev != null) {
-                prevData = new Gson().fromJson(prev, CoolAutomation.class);
+                prevData = GsonFactory.instance().fromJson(prev, CoolAutomation.class);
             }
         } catch (JsonSyntaxException ex) {
 
@@ -487,7 +487,7 @@ public class Operation {
             String prev = Utility.readFile(statusPath);
 
             if (prev != null) {
-                prevData = new Gson().fromJson(prev, CoolAutomation.class);
+                prevData = GsonFactory.instance().fromJson(prev, CoolAutomation.class);
             }
         } catch (JsonSyntaxException ex) {
 
@@ -561,7 +561,7 @@ public class Operation {
             String prev = Utility.readFile(statusPath);
 
             if (prev != null) {
-                prevData = new Gson().fromJson(prev, CoolAutomation.class);
+                prevData = GsonFactory.instance().fromJson(prev, CoolAutomation.class);
             }
         } catch (JsonSyntaxException ex) {
 

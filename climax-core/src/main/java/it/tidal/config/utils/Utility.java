@@ -1,11 +1,11 @@
 package it.tidal.config.utils;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import it.tidal.gson.GsonFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -14,6 +14,9 @@ import java.util.Date;
  * @author dede
  */
 public class Utility {
+
+    public static DateTimeFormatter basicDateTimeFormatter = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static boolean writeFile(String path,
             String content, boolean append) {
@@ -104,7 +107,6 @@ public class Utility {
 
     public static String prettyJson(Object o) {
 
-        final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.toJson(o);
+        return GsonFactory.prettyInstance().toJson(o);
     }
 }
