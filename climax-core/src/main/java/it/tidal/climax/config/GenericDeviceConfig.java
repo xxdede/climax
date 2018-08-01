@@ -38,7 +38,7 @@ public class GenericDeviceConfig implements Serializable {
         @SerializedName("intake-temperature-provider")
         INTAKE_TEMPERATURE_PROVIDER(3),
         @SerializedName("intake-actuator")
-        INTAKE_ACTUATOR(3);
+        INTAKE_ACTUATOR(4);
 
         private final int v;
 
