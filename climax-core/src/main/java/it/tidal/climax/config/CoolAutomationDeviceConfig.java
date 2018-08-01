@@ -1,10 +1,12 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.config.utils.DeviceFamiliable;
+import it.tidal.config.utils.DeviceFamily;
 import java.io.Serializable;
 import java.util.List;
 
-public class CoolAutomationDeviceConfig implements Serializable {
+public class CoolAutomationDeviceConfig implements Serializable, DeviceFamiliable {
 
     public enum Status {
 
@@ -31,6 +33,12 @@ public class CoolAutomationDeviceConfig implements Serializable {
     private Status status;
     private List<GenericDeviceConfig> related;
 
+    @Override
+    public DeviceFamily getDeviceFamily() {
+        return DeviceFamily.COOLAUTOMATION;
+    }
+
+    @Override
     public String getName() {
         return name;
     }

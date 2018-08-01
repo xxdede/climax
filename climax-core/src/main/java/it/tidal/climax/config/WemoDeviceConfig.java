@@ -1,9 +1,11 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.config.utils.DeviceFamiliable;
+import it.tidal.config.utils.DeviceFamily;
 import java.io.Serializable;
 
-public class WemoDeviceConfig implements Serializable {
+public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
 
     public enum Type {
 
@@ -26,6 +28,12 @@ public class WemoDeviceConfig implements Serializable {
     private Integer port;
     private Type type;
 
+    @Override
+    public DeviceFamily getDeviceFamily() {
+        return DeviceFamily.WEMO;
+    }
+
+    @Override
     public String getName() {
         return name;
     }

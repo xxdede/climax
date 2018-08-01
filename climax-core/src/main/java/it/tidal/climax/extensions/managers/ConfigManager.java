@@ -5,6 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import it.tidal.climax.config.Config;
 import it.tidal.climax.config.GenericDeviceConfig;
 import it.tidal.climax.config.ProgramConfig;
+import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.Hour;
 import it.tidal.config.utils.Utility;
 import it.tidal.config.utils.WeekDay;
@@ -57,13 +58,13 @@ public class ConfigManager {
         return null;
     }
 
-    public static GenericDeviceConfig.OperationMode suitableOperationMode(Config config, String deviceName, LocalDateTime now) {
+    public static GenericDeviceConfig.OperationMode suitableOperationMode(Config cfg, String deviceName, LocalDateTime now) {
 
-        if (deviceName == null || config == null) {
+        if (deviceName == null || cfg == null) {
             return GenericDeviceConfig.OperationMode.NOT_SPECIFIED;
         }
 
-        final ProgramConfig pc = suitableProgramConfig(config.getPrograms(), now);
+        final ProgramConfig pc = suitableProgramConfig(cfg.getPrograms(), now);
 
         if (pc == null) {
             return GenericDeviceConfig.OperationMode.NOT_SPECIFIED;
@@ -153,5 +154,28 @@ public class ConfigManager {
         }
 
         return candidate;
+    }
+
+    public static DeviceFamiliable findDevice(Config cfg, String deviceName) {
+
+        if (cfg == null || deviceName == null) {
+            return null;
+        }
+
+        DeviceFamiliable d = null;
+
+        if (cfg.getNetAtmo() != null) {
+            d = cfg.getNetAtmo().find(deviceName);
+        }
+
+        if (d == null && cfg.getCoolAutomation() != null) {
+            d = cfg.getCoolAutomation().find(deviceName);
+        }
+
+        if (d == null && cfg.getWemo() != null) {
+            d = cfg.getWemo().find(deviceName);
+        }
+
+        return d;
     }
 }

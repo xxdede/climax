@@ -1,9 +1,11 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.config.utils.DeviceFamiliable;
+import it.tidal.config.utils.DeviceFamily;
 import java.io.Serializable;
 
-public class NetAtmoDeviceConfig implements Serializable {
+public class NetAtmoDeviceConfig implements Serializable, DeviceFamiliable {
 
     public enum Type {
 
@@ -28,6 +30,12 @@ public class NetAtmoDeviceConfig implements Serializable {
     private String name;
     private Type type;
 
+    @Override
+    public DeviceFamily getDeviceFamily() {
+        return DeviceFamily.NETATMO;
+    }
+
+    @Override
     public String getName() {
         return name;
     }

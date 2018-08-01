@@ -61,4 +61,20 @@ public class NetAtmoConfig implements Serializable {
     public void setDevices(List<NetAtmoDeviceConfig> devices) {
         this.devices = devices;
     }
+
+    public NetAtmoDeviceConfig find(String name) {
+
+        if (devices == null || devices.isEmpty() || name == null) {
+            return null;
+        }
+
+        for (NetAtmoDeviceConfig device : devices) {
+
+            if (name.equals(device.getName())) {
+                return device;
+            }
+        }
+
+        return null;
+    }
 }
