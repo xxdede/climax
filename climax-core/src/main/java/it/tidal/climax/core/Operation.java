@@ -1,32 +1,11 @@
 package it.tidal.climax.core;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import it.tidal.climax.config.Config;
-import it.tidal.climax.config.CoolAutomationDeviceConfig;
-import static it.tidal.climax.core.Application.DOUBLE_FMT;
-import static it.tidal.climax.core.Application.IS_DAY;
-import static it.tidal.climax.core.Application.NOW;
-import static it.tidal.climax.core.Application.TMP_STATUS_PATH;
-import it.tidal.climax.database.mapping.HVACStatus;
-import it.tidal.climax.database.mapping.RoomStatus;
-import it.tidal.climax.extensions.data.CoolAutomation;
-import it.tidal.climax.extensions.data.NetAtmo;
-import it.tidal.climax.extensions.data.SolarEdgeEnergy;
-import it.tidal.climax.extensions.managers.CoolAutomationManager;
-import it.tidal.climax.extensions.managers.DatabaseManager;
-import it.tidal.climax.extensions.managers.NetAtmoManager;
-import it.tidal.climax.extensions.managers.SolarEdgeManager;
-import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class Operation {
 
     private static Log l = Log.prepare(Operation.class.getSimpleName());
-
+    /*
     public static void runProgram(Config config) {
 
         //////////////////  Definitions  //////////////////
@@ -771,4 +750,5 @@ public class Operation {
         Utility.writeFile(statusPath, Log.json(finalData, true));
         return finalData;
     }
+     */
 }

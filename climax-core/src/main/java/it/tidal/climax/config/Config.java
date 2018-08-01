@@ -12,21 +12,21 @@ public class Config implements Serializable {
     private static final long serialVersionUID = 1L;
 
     static int LAST_MAJ_NUMBER = 0;
-    static int LAST_MIN_NUMBER = 2;
-    static int LAST_REV_NUMBER = 1;
+    static int LAST_MIN_NUMBER = 3;
+    static int LAST_REV_NUMBER = 0;
 
     private int majNumber;
     private int minNumber;
     private int revNumber;
 
     private String installationName = "example";
-    private boolean skipActions = true;
-    private boolean alwaysConfigure = false;
 
-    private NetAtmoConfig netAtmo = null;
+    //private Object operationMode;
+    //private SolarEdgeConfig solarEdge = null;
+    //private MySQLConfig mySQL = null;
+    //private NetAtmoConfig netAtmo = null;
     private CoolAutomationConfig coolAutomation = null;
-    private MySQLConfig mySQL = null;
-    private SolarEdgeConfig solarEdge = null;
+    private WemoConfig wemo = null;
 
     public Config() {
 
@@ -86,22 +86,6 @@ public class Config implements Serializable {
         this.installationName = installationName;
     }
 
-    public boolean isSkipActions() {
-        return skipActions;
-    }
-
-    public void setSkipActions(boolean skipActions) {
-        this.skipActions = skipActions;
-    }
-
-    public NetAtmoConfig getNetAtmo() {
-        return netAtmo;
-    }
-
-    public void setNetatmo(NetAtmoConfig netAtmo) {
-        this.netAtmo = netAtmo;
-    }
-
     public CoolAutomationConfig getCoolAutomation() {
         return coolAutomation;
     }
@@ -110,27 +94,12 @@ public class Config implements Serializable {
         this.coolAutomation = coolAutomation;
     }
 
-    public MySQLConfig getMySQL() {
-        return mySQL;
+    public WemoConfig getWemo() {
+        return wemo;
     }
 
-    public void setMySQL(MySQLConfig mySQL) {
-        this.mySQL = mySQL;
+    public void setWemo(WemoConfig wemo) {
+        this.wemo = wemo;
     }
 
-    public boolean isAlwaysConfigure() {
-        return alwaysConfigure;
-    }
-
-    public void setAlwaysConfigure(boolean alwaysConfigure) {
-        this.alwaysConfigure = alwaysConfigure;
-    }
-
-    public SolarEdgeConfig getSolarEdge() {
-        return solarEdge;
-    }
-
-    public void setSolarEdge(SolarEdgeConfig solarEdge) {
-        this.solarEdge = solarEdge;
-    }
 }

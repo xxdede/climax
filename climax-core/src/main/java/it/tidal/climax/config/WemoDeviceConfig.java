@@ -1,11 +1,22 @@
 package it.tidal.climax.config;
 
-public class WemoDeviceConfig {
+import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
+
+public class WemoDeviceConfig implements Serializable {
 
     public enum Type {
 
-        SWITCH,
-        INSIGHT
+        @SerializedName("switch")
+        SWITCH(0),
+        @SerializedName("insight")
+        INSIGHT(1);
+
+        private final int v;
+
+        private Type(int v) {
+            this.v = v;
+        }
     }
 
     private static final long serialVersionUID = 1L;

@@ -41,6 +41,7 @@ public class ConfigManager {
             return type.newInstance();
         } catch (IllegalAccessException
                 | InstantiationException ex) {
+            l.error(ex, "A problem occurred while instantiating config...");
         }
 
         return null;
