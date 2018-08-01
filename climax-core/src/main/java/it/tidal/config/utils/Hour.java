@@ -1,8 +1,9 @@
 package it.tidal.config.utils;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
-public class Hour implements Serializable {
+public class Hour implements Serializable, Comparable<Hour> {
 
     private static final long serialVersionUID = 1L;
 
@@ -25,6 +26,40 @@ public class Hour implements Serializable {
     @Override
     public String toString() {
         return "" + hour + ":" + (minute < 10 ? "0" : "") + minute;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+
+        if (obj instanceof Hour) {
+
+            Hour other = (Hour) obj;
+            return this.hour == other.hour && this.minute == other.minute;
+        }
+
+        return false;
+    }
+
+    @Override
+    public int compareTo(Hour o) {
+
+        if (o == null) {
+            return -1;
+        }
+
+        if (this.hour < o.hour) {
+            return -1;
+        } else if (this.hour > o.hour) {
+            return 1;
+        }
+
+        if (this.minute < o.minute) {
+            return -1;
+        } else if (this.minute > o.minute) {
+            return 1;
+        }
+
+        return 0;
     }
 
     public static Hour fromString(String representation) {
@@ -63,5 +98,14 @@ public class Hour implements Serializable {
         }
 
         return new Hour(hour, minute);
+    }
+
+    public static Hour fromLocalDateTime(LocalDateTime ldt) {
+
+        if (ldt == null) {
+            return null;
+        }
+
+        return new Hour(ldt.getHour(), ldt.getMinute());
     }
 }

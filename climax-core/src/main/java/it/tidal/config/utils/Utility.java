@@ -5,8 +5,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * Mixed utils. A place to put some different things.
@@ -15,8 +19,10 @@ import java.util.Date;
  */
 public class Utility {
 
-    public static DateTimeFormatter basicDateTimeFormatter = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static DateTimeFormatter basicDateTimeFormatter
+            = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final NumberFormat americanDoubleFormatter
+            = new DecimalFormat("#0.0", DecimalFormatSymbols.getInstance(Locale.US));
 
     public static boolean writeFile(String path,
             String content, boolean append) {
@@ -108,5 +114,9 @@ public class Utility {
     public static String prettyJson(Object o) {
 
         return GsonFactory.prettyInstance().toJson(o);
+    }
+
+    public static String americanDouble(Double d) {
+        return americanDoubleFormatter.format(d);
     }
 }

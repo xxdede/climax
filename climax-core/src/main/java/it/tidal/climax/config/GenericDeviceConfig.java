@@ -8,14 +8,16 @@ public class GenericDeviceConfig implements Serializable {
 
     public enum OperationMode {
 
+        @SerializedName("not-specified")
+        NOT_SPECIFIED(0),
         @SerializedName("disabled")
-        DISABLED(0),
+        DISABLED(1),
         @SerializedName("enabled")
-        ENABLED(1),
+        ENABLED(2),
         @SerializedName("operate-auto")
-        OPERATE_AUTO(2),
+        OPERATE_AUTO(3),
         @SerializedName("operate-if-on")
-        OPERATE_IF_ON(3);
+        OPERATE_IF_ON(4);
 
         private final int v;
 

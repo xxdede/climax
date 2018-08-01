@@ -1,6 +1,8 @@
 package it.tidal.config.utils;
 
 import com.google.gson.annotations.SerializedName;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 
 public enum WeekDay {
 
@@ -23,6 +25,41 @@ public enum WeekDay {
 
     private WeekDay(int v) {
         this.v = v;
+    }
+
+    public static WeekDay fromDayOfWeek(DayOfWeek dow) {
+
+        if (dow == null) {
+            return null;
+        }
+
+        switch (dow) {
+            case MONDAY:
+                return WeekDay.MONDAY;
+            case TUESDAY:
+                return WeekDay.TUESDAY;
+            case WEDNESDAY:
+                return WeekDay.WEDNESDAY;
+            case THURSDAY:
+                return WeekDay.THURSDAY;
+            case FRIDAY:
+                return WeekDay.FRIDAY;
+            case SATURDAY:
+                return WeekDay.SATURDAY;
+            case SUNDAY:
+                return WeekDay.SUNDAY;
+        }
+
+        return null;
+    }
+
+    public static WeekDay fromLocalDateTime(LocalDateTime ldt) {
+
+        if (ldt == null) {
+            return null;
+        }
+
+        return fromDayOfWeek(ldt.getDayOfWeek());
     }
 
     @Override

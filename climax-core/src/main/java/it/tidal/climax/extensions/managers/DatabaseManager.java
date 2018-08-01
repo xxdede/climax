@@ -1,7 +1,6 @@
 package it.tidal.climax.extensions.managers;
 
 import it.tidal.climax.config.MySQLConfig;
-import it.tidal.climax.core.Application;
 import it.tidal.climax.database.mapping.HVACStatus;
 import it.tidal.climax.database.mapping.RoomStatus;
 import it.tidal.climax.extensions.data.SolarEdge;
@@ -80,7 +79,8 @@ public class DatabaseManager {
                 .append("` (`time_sec`,`temperature`");
 
         values.append("(").append(status.getTimestamp()).append(",")
-                .append(Application.DOUBLE_FMT.format(status.getTemperature()));
+                .append(Utility.americanDoubleFormatter.
+                        format(status.getTemperature()));
 
         if (status.getHumidity() != null) {
 

@@ -1,6 +1,8 @@
 package it.tidal.climax.config;
 
+import it.tidal.climax.config.GenericDeviceConfig.OperationMode;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -133,5 +135,29 @@ public class Config implements Serializable {
 
     public void setWemo(WemoConfig wemo) {
         this.wemo = wemo;
+    }
+
+    public ProgramConfig getProgram(LocalDateTime now) {
+
+        if (programs == null) {
+            return null;
+        }
+
+        return ProgramConfig.findSuitableConfig(programs, now);
+    }
+
+    public OperationMode getOperationMode(String deviceName, LocalDateTime now) {
+
+        if (deviceName == null) {
+            return OperationMode.NOT_SPECIFIED;
+        }
+
+        final ProgramConfig pc = getProgram(now);
+
+        if (pc == null) {
+            return OperationMode.NOT_SPECIFIED;
+        }
+
+        return pc.getDeviceConfig(deviceName, now);
     }
 }
