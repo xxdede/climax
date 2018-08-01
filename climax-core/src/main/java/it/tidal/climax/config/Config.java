@@ -24,7 +24,7 @@ public class Config implements Serializable {
     //private Object operationMode;
     //private SolarEdgeConfig solarEdge = null;
     //private MySQLConfig mySQL = null;
-    //private NetAtmoConfig netAtmo = null;
+    private NetAtmoConfig netAtmo = null;
     private CoolAutomationConfig coolAutomation = null;
     private WemoConfig wemo = null;
 
@@ -84,6 +84,14 @@ public class Config implements Serializable {
 
     public void setInstallationName(String installationName) {
         this.installationName = installationName;
+    }
+
+    public NetAtmoConfig getNetAtmo() {
+        return netAtmo;
+    }
+
+    public void setNetAtmo(NetAtmoConfig netAtmo) {
+        this.netAtmo = netAtmo;
     }
 
     public CoolAutomationConfig getCoolAutomation() {

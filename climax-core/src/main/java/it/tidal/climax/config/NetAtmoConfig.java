@@ -1,6 +1,7 @@
 package it.tidal.climax.config;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class NetAtmoConfig implements Serializable {
 
@@ -11,6 +12,7 @@ public class NetAtmoConfig implements Serializable {
     private String clientId;
     private String clientSecret;
     private String scope;
+    private List<NetAtmoDeviceConfig> devices;
 
     public String getUsername() {
         return username;
@@ -50,5 +52,13 @@ public class NetAtmoConfig implements Serializable {
 
     public void setScope(String scope) {
         this.scope = scope;
+    }
+
+    public List<NetAtmoDeviceConfig> getDevices() {
+        return devices;
+    }
+
+    public void setDevices(List<NetAtmoDeviceConfig> devices) {
+        this.devices = devices;
     }
 }
