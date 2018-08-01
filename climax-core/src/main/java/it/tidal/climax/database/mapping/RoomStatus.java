@@ -5,7 +5,6 @@
  */
 package it.tidal.climax.database.mapping;
 
-import static it.tidal.climax.core.Application.DOUBLE_FMT;
 import it.tidal.climax.core.Illness;
 import it.tidal.config.utils.Utility;
 import java.io.Serializable;
@@ -161,10 +160,12 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
     public String getDescription() {
 
         return Utility.pad(" ", 11, name, 1) + " "
-                + "temperature: " + DOUBLE_FMT.format(temperature) + "°"
+                + "temperature: " + Utility.americanDoubleFormatter
+                        .format(temperature) + "°"
                 + ", humidity: " + humidity + "%"
                 + ", co2: " + (co2 == null ? " - " : co2) + "ppm,"
-                + " perceived temperature: " + DOUBLE_FMT.format(perceived)
+                + " perceived temperature: " + Utility.americanDoubleFormatter
+                        .format(perceived)
                 + ", illness level: " + illness;
     }
 }
