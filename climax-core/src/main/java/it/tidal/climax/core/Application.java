@@ -1,7 +1,7 @@
 package it.tidal.climax.core;
 
 import it.tidal.climax.config.Config;
-import it.tidal.config.utils.ConfigManager;
+import it.tidal.climax.extensions.managers.ConfigManager;
 import it.tidal.logging.Log;
 import java.io.File;
 import java.time.LocalDateTime;
@@ -56,7 +56,7 @@ public class Application {
 
         // DEBUG
         //l.info("Config read: " + Utility.prettyJson(config));
-        l.info(config.getOperationMode("P1", NOW).toString());
+        l.info(ConfigManager.suitableOperationMode(config, "P0", NOW).toString());
 
         /*
         String program = "standard";
