@@ -22,8 +22,8 @@ public class Config implements Serializable {
     private String installationName = "example";
 
     //private Object operationMode;
-    //private SolarEdgeConfig solarEdge = null;
-    //private MySQLConfig mySQL = null;
+    private MySQLConfig mySQL = null;
+    private SolarEdgeConfig solarEdge = null;
     private NetAtmoConfig netAtmo = null;
     private CoolAutomationConfig coolAutomation = null;
     private WemoConfig wemo = null;
@@ -84,6 +84,22 @@ public class Config implements Serializable {
 
     public void setInstallationName(String installationName) {
         this.installationName = installationName;
+    }
+
+    public MySQLConfig getMySQL() {
+        return mySQL;
+    }
+
+    public void setMySQL(MySQLConfig mySQL) {
+        this.mySQL = mySQL;
+    }
+
+    public SolarEdgeConfig getSolarEdge() {
+        return solarEdge;
+    }
+
+    public void setSolarEdge(SolarEdgeConfig solarEdge) {
+        this.solarEdge = solarEdge;
     }
 
     public NetAtmoConfig getNetAtmo() {
