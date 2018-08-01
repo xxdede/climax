@@ -16,7 +16,9 @@ public class GenericDeviceConfig implements Serializable {
         @SerializedName("operate-auto")
         OPERATE_AUTO(3),
         @SerializedName("operate-if-on")
-        OPERATE_IF_ON(4);
+        OPERATE_IF_ON(4),
+        @SerializedName("operate-if-on-or-self-off")
+        OPERATE_IF_ON_OR_SELF_OFF(5);
 
         private final int v;
 
