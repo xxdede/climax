@@ -1,8 +1,40 @@
 package it.tidal.climax.core;
 
+import com.google.gson.annotations.SerializedName;
 import it.tidal.logging.Log;
 
 public class Operation {
+
+    public enum Program {
+
+        @SerializedName("default")
+        DEFAULT(0),
+        @SerializedName("shutdown")
+        SHUTDOWN(1),
+        @SerializedName("only-solaredge")
+        ONLY_SOLAREDGE(2);
+
+        private final int v;
+
+        private Program(int v) {
+            this.v = v;
+        }
+
+        public String getSlug() {
+
+            switch (v) {
+
+                case 0:
+                    return "default";
+                case 1:
+                    return "shutdown";
+                case 2:
+                    return "only-solaredge";
+            }
+
+            return null;
+        }
+    }
 
     private static Log l = Log.prepare(Operation.class.getSimpleName());
     /*

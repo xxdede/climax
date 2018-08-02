@@ -2,6 +2,7 @@ package it.tidal.climax.core;
 
 import it.tidal.climax.config.Config;
 import it.tidal.climax.config.CoolAutomationDeviceConfig;
+import it.tidal.climax.core.Operation.Program;
 import it.tidal.climax.extensions.managers.ConfigManager;
 import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
@@ -19,8 +20,6 @@ public class Application {
     private static Log l = Log.prepare(Application.class.getSimpleName());
 
     public static final String TMP_CONFIG_PATH = "/tmp/climax.conf";
-    public static final String TMP_STATUS_PATH = "/tmp/climax-status-";
-
     public static final String APPLICATION_BUILD = "2018-08-01";
 
     public static final LocalDateTime NOW = LocalDateTime.now();
@@ -68,12 +67,28 @@ public class Application {
             }
         }
 
-        /*
-        String program = "standard";
+        String program = Program.DEFAULT.getSlug();
+        boolean recognizedProgram = false;
 
         if (args.length > 1) {
             program = args[1];
         }
-         */
+
+        for (Program availableProgram : Program.values()) {
+            if (program.equals(availableProgram.getSlug())) {
+                recognizedProgram = true;
+                break;
+            }
+        }
+
+        if (!recognizedProgram) {
+
+            l.error("Unkwnowm program: {}, bailing out!" + program);
+            return;
+        }
+
+        l.info("Climax {} started with program '{}'...",
+                cfg.getVersion(), program);
+
     }
 }
