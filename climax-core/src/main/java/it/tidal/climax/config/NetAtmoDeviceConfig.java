@@ -3,6 +3,7 @@ package it.tidal.climax.config;
 import com.google.gson.annotations.SerializedName;
 import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.DeviceFamily;
+import it.tidal.config.utils.Utility;
 import java.io.Serializable;
 
 public class NetAtmoDeviceConfig implements Serializable, DeviceFamiliable {
@@ -22,6 +23,10 @@ public class NetAtmoDeviceConfig implements Serializable, DeviceFamiliable {
 
         private Type(int v) {
             this.v = v;
+        }
+
+        public String getSlug() {
+            return Utility.slugFromAnnotation(this);
         }
     }
 

@@ -26,6 +26,12 @@ public class Application {
 
     public static void main(String[] args) {
 
+        if (true) {
+
+            System.out.println("" + Config.Variant.WRITE_DATABASE.getSlug());
+            return;
+        }
+
         String configFileName = TMP_CONFIG_PATH;
 
         if (args.length > 0) {

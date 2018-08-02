@@ -1,6 +1,7 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.config.utils.Utility;
 import java.io.Serializable;
 import java.util.List;
 
@@ -24,6 +25,10 @@ public class Config implements Serializable {
 
         private Variant(int v) {
             this.v = v;
+        }
+
+        public String getSlug() {
+            return Utility.slugFromAnnotation(this);
         }
     }
 

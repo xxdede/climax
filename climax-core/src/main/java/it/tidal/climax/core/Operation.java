@@ -1,6 +1,7 @@
 package it.tidal.climax.core;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 
 public class Operation {
@@ -21,18 +22,7 @@ public class Operation {
         }
 
         public String getSlug() {
-
-            switch (v) {
-
-                case 0:
-                    return "default";
-                case 1:
-                    return "shutdown";
-                case 2:
-                    return "only-solaredge";
-            }
-
-            return null;
+            return Utility.slugFromAnnotation(this);
         }
     }
 

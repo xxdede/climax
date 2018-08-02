@@ -3,6 +3,7 @@ package it.tidal.climax.config;
 import com.google.gson.annotations.SerializedName;
 import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.DeviceFamily;
+import it.tidal.config.utils.Utility;
 import java.io.Serializable;
 import java.util.List;
 
@@ -21,6 +22,10 @@ public class CoolAutomationDeviceConfig implements Serializable, DeviceFamiliabl
 
         private Status(int v) {
             this.v = v;
+        }
+
+        public String getSlug() {
+            return Utility.slugFromAnnotation(this);
         }
     }
 

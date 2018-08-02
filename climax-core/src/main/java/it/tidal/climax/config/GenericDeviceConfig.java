@@ -1,6 +1,7 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.config.utils.Utility;
 import java.io.Serializable;
 
 public class GenericDeviceConfig implements Serializable {
@@ -25,6 +26,10 @@ public class GenericDeviceConfig implements Serializable {
         private OperationMode(int v) {
             this.v = v;
         }
+
+        public String getSlug() {
+            return Utility.slugFromAnnotation(this);
+        }
     }
 
     public enum Role {
@@ -44,6 +49,10 @@ public class GenericDeviceConfig implements Serializable {
 
         private Role(int v) {
             this.v = v;
+        }
+
+        public String getSlug() {
+            return Utility.slugFromAnnotation(this);
         }
     }
 

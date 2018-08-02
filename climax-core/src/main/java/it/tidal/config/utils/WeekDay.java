@@ -27,6 +27,10 @@ public enum WeekDay {
         this.v = v;
     }
 
+    public String getSlug() {
+        return Utility.slugFromAnnotation(this);
+    }
+
     public static WeekDay fromDayOfWeek(DayOfWeek dow) {
 
         if (dow == null) {
@@ -64,25 +68,7 @@ public enum WeekDay {
 
     @Override
     public String toString() {
-
-        switch (v) {
-            case 0:
-                return "monday";
-            case 1:
-                return "tuesday";
-            case 2:
-                return "wednesday";
-            case 3:
-                return "thursday";
-            case 4:
-                return "friday";
-            case 5:
-                return "saturday";
-            case 6:
-                return "sunday";
-        }
-
-        return "unknown";
+        return getSlug();
     }
 
 }

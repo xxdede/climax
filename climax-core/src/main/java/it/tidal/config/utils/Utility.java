@@ -1,5 +1,6 @@
 package it.tidal.config.utils;
 
+import com.google.gson.annotations.SerializedName;
 import it.tidal.gson.GsonFactory;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,6 +67,17 @@ public class Utility {
         }
 
         return s.toLowerCase().replace(' ', '_');
+    }
+
+    public static String slugFromAnnotation(Enum e) {
+
+        try {
+            return e.getClass()
+                    .getField(e.name()).getAnnotation(SerializedName.class)
+                    .value();
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     public static long normalizedNow(int sec) {

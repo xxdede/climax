@@ -20,21 +20,13 @@ public enum DeviceFamily {
         this.v = v;
     }
 
-    public String getDescription() {
-        switch (v) {
-            case 0:
-                return "Wemo";
-            case 1:
-                return "NetAtmo";
-            case 2:
-                return "CoolAutomation";
-        }
-        return null;
+    public String getSlug() {
+        return Utility.slugFromAnnotation(this);
     }
 
     @Override
     public String toString() {
-        return getDescription();
+        return getSlug();
     }
 
     public Type getConfigClass() {
