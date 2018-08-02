@@ -2,6 +2,7 @@ package it.tidal.climax.core;
 
 import com.google.gson.annotations.SerializedName;
 import it.tidal.climax.config.Config;
+import it.tidal.climax.config.Config.Variant;
 import it.tidal.climax.extensions.data.SolarEdgeEnergy;
 import it.tidal.climax.extensions.managers.DatabaseManager;
 import it.tidal.climax.extensions.managers.SolarEdgeManager;
@@ -111,10 +112,15 @@ public class Operation {
 
         try {
 
-            DatabaseManager dbm;
-            dbm = DatabaseManager.getInstance(cfg.getMySQL());
-            dbm.checkAndInsertSolarEdgeEnergy(energy);
-            dbm.dispose();
+            if (Variant.LOG_ONLY.equals(cfg.getVariant())) {
+                l.info(Utility.prettyJson(energy));
+            } else {
+
+                DatabaseManager dbm;
+                dbm = DatabaseManager.getInstance(cfg.getMySQL());
+                dbm.checkAndInsertSolarEdgeEnergy(energy);
+                dbm.dispose();
+            }
 
         } catch (Exception ex) {
 
