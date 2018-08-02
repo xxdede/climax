@@ -1,8 +1,13 @@
 package it.tidal.climax.core;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.climax.config.Config;
+import it.tidal.climax.extensions.data.SolarEdgeEnergy;
+import it.tidal.climax.extensions.managers.DatabaseManager;
+import it.tidal.climax.extensions.managers.SolarEdgeManager;
 import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
+import java.time.LocalDateTime;
 
 public class Operation {
 
@@ -21,12 +26,102 @@ public class Operation {
             this.v = v;
         }
 
+        public static Program fromString(String s) {
+
+            for (Program p : Program.values()) {
+                if (p.getSlug().equals(s)) {
+                    return p;
+                }
+            }
+
+            return null;
+        }
+
         public String getSlug() {
             return Utility.slugFromAnnotation(this);
         }
     }
 
     private static Log l = Log.prepare(Operation.class.getSimpleName());
+
+    public static void execute(String[] args, Program prg, Config cfg,
+            LocalDateTime now) {
+
+        switch (prg) {
+
+            case DEFAULT:
+                defaultProgram(cfg);
+            case SHUTDOWN:
+                shutdownProgram(cfg);
+            case ONLY_SOLAREDGE: {
+
+                Long start = null;
+                Long end = null;
+
+                if (args.length > 3) {
+
+                    start = Long.parseLong(args[2]);
+                    end = Long.parseLong(args[3]);
+
+                    if (start > end) {
+                        throw new IllegalArgumentException("Start ts (" + start
+                                + ") must precede end ts (" + end + ").");
+                    }
+                }
+
+                solarEdgeProgram(cfg, start, end, now);
+            }
+        }
+    }
+
+    private static void defaultProgram(Config cfg) {
+    }
+
+    private static void shutdownProgram(Config cfg) {
+    }
+
+    private static void solarEdgeProgram(Config cfg,
+            Long start, Long end, LocalDateTime now) {
+
+        SolarEdgeEnergy energy = null;
+
+        try {
+
+            final SolarEdgeManager sm;
+            sm = SolarEdgeManager.getInstance(cfg.getSolarEdge());
+
+            if (start == null || end == null) {
+
+                energy = sm.getEnergyDetails(now);
+                l.debug("Collected values with ts "
+                        + energy.getFirstTimestamp() + ".");
+            } else {
+
+                energy = sm.getEnergyDetails(start, end);
+
+                final int tot = energy.getMeters().size();
+                l.debug("Collected " + tot + " value"
+                        + (tot != 1 ? "s." : "."));
+            }
+
+        } catch (Exception ex) {
+
+            l.error("An error occurred with SolarEdge!", ex);
+        }
+
+        try {
+
+            DatabaseManager dbm;
+            dbm = DatabaseManager.getInstance(cfg.getMySQL());
+            dbm.checkAndInsertSolarEdgeEnergy(energy);
+            dbm.dispose();
+
+        } catch (Exception ex) {
+
+            l.error("An error occurred while saving to DB!", ex);
+        }
+    }
+
     /*
     public static void runProgram(Config config) {
 
@@ -368,47 +463,6 @@ public class Operation {
         // At night run only bedroom devices
         operateShutdown(config, cadc0, cam0, piano0Data, true);
         operateShutdown(config, cadc1, cam1, piano1Data, true);
-    }
-
-    public static void runLogSolarEdge(Config config, Long s, Long e) {
-
-        SolarEdgeEnergy energy = null;
-
-        try {
-
-            final SolarEdgeManager sm;
-            sm = SolarEdgeManager.getInstance(config.getSolarEdge());
-
-            if (s == null || e == null) {
-
-                energy = sm.getEnergyDetails(NOW);
-                l.debug("Collected values with ts "
-                        + energy.getFirstTimestamp() + ".");
-            } else {
-
-                energy = sm.getEnergyDetails(s, e);
-
-                final int tot = energy.getMeters().size();
-                l.debug("Collected " + tot + " value"
-                        + (tot != 1 ? "s." : "."));
-            }
-
-        } catch (Exception ex) {
-
-            l.error("An error occurred with SolarEdge!", ex);
-        }
-
-        try {
-
-            DatabaseManager dbm;
-            dbm = DatabaseManager.getInstance(config.getMySQL());
-            dbm.checkAndInsertSolarEdgeEnergy(energy);
-            dbm.dispose();
-
-        } catch (Exception ex) {
-
-            l.error("An error occurred while saving to DB!", ex);
-        }
     }
 
     private static CoolAutomation operateShutdown(Config config,
