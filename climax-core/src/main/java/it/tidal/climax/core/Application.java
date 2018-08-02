@@ -67,28 +67,22 @@ public class Application {
             }
         }
 
-        String program = Program.DEFAULT.getSlug();
-        boolean recognizedProgram = false;
+        Program prg = Program.DEFAULT;
 
         if (args.length > 1) {
-            program = args[1];
+            prg = Program.fromString(args[1]);
         }
 
-        for (Program availableProgram : Program.values()) {
-            if (program.equals(availableProgram.getSlug())) {
-                recognizedProgram = true;
-                break;
-            }
-        }
+        if (prg == null) {
 
-        if (!recognizedProgram) {
-
-            l.error("Unkwnowm program: {}, bailing out!" + program);
+            l.error("Unkwnowm program... bailing out!");
             return;
+        } else {
+
+            l.info("Climax {} started with program '{}'...",
+                    cfg.getVersion(), prg.getSlug());
         }
 
-        l.info("Climax {} started with program '{}'...",
-                cfg.getVersion(), program);
-
+        Operation.execute(args, prg, cfg, NOW);
     }
 }
