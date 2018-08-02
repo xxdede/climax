@@ -3,7 +3,10 @@ package it.tidal.climax.core;
 import com.google.gson.annotations.SerializedName;
 import it.tidal.climax.config.Config;
 import it.tidal.climax.config.Config.Variant;
+import it.tidal.climax.config.CoolAutomationDeviceConfig;
+import it.tidal.climax.extensions.data.CoolAutomation;
 import it.tidal.climax.extensions.data.SolarEdgeEnergy;
+import it.tidal.climax.extensions.managers.CoolAutomationManager;
 import it.tidal.climax.extensions.managers.DatabaseManager;
 import it.tidal.climax.extensions.managers.SolarEdgeManager;
 import it.tidal.config.utils.Utility;
@@ -79,6 +82,36 @@ public class Operation {
     }
 
     private static void shutdownProgram(Config cfg) {
+
+        for (CoolAutomationDeviceConfig cadc : cfg.getCoolAutomation().getDevices()) {
+
+            // Check status of device
+            final String name = cadc.getName();
+            final CoolAutomationManager mgr = CoolAutomationManager.getInstance(cadc);
+            final CoolAutomation preCa = mgr.getDeviceData();
+
+            if (preCa.getStatus() == CoolAutomation.Status.OFF) {
+
+                l.info("Device \"" + name + "\" already off...");
+
+            } else if (!Variant.LOG_ONLY.equals(cfg.getVariant())) {
+
+                CoolAutomation postCa = mgr.setAll(preCa,
+                        preCa.getOpMode(), preCa.getFanSpeed(),
+                        CoolAutomation.Status.OFF, 0);
+
+                if (postCa != null) {
+                    l.info("Device \"" + name + "\" turned off.");
+                } else {
+                    l.error("Something went wrong while turning off device \"" + name + "\"!");
+                }
+
+                // Shutdown usually is triggered and not scheduled
+                // so we do not add it to database
+            }
+
+            mgr.disconnect();
+        }
     }
 
     private static void solarEdgeProgram(Config cfg,
