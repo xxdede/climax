@@ -3,6 +3,7 @@ package it.tidal.climax.core;
 import it.tidal.climax.config.Config;
 import it.tidal.climax.config.CoolAutomationDeviceConfig;
 import it.tidal.climax.extensions.managers.ConfigManager;
+import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
 import java.io.File;
 import java.time.LocalDateTime;
@@ -40,26 +41,31 @@ public class Application {
             return;
         }
 
-        Config config = ConfigManager.read(Config.class, configFileName);
+        Config cfg = ConfigManager.read(Config.class, configFileName);
 
-        if (config == null) {
+        if (cfg == null) {
 
             l.error("No config found in: {}.", configFileName);
             return;
         }
 
-        if (!config.isLatestVersion()) {
+        if (!cfg.isLatestVersion()) {
 
             l.error("Config version mismatch found: {}, latest: {}."
-                    + config.getVersion(), Config.getLatestVersion());
+                    + cfg.getVersion(), Config.getLatestVersion());
             return;
         }
 
-        // DEBUG: cycle all CoolAutomation devices and print their desired operation mode
-        for (CoolAutomationDeviceConfig dev : config.getCoolAutomation().getDevices()) {
+        if (cfg.getVariant() == Config.Variant.LOG_ONLY) {
 
-            l.info("Device \"" + dev.getName() + "\" (" + dev.getDeviceFamily() + ") = "
-                    + ConfigManager.suitableOperationMode(config, dev.getName(), NOW));
+            l.info(GsonFactory.prettyInstance().toJson(cfg));
+
+            for (CoolAutomationDeviceConfig dev : cfg.getCoolAutomation().getDevices()) {
+
+                l.info("Scheduled configuration for device \"" + dev.getName()
+                        + "\" (" + dev.getDeviceFamily() + ") = "
+                        + ConfigManager.suitableOperationMode(cfg, dev.getName(), NOW));
+            }
         }
 
         /*

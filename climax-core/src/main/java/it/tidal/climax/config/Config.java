@@ -1,5 +1,6 @@
 package it.tidal.climax.config;
 
+import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
 import java.util.List;
 
@@ -10,17 +11,34 @@ import java.util.List;
  */
 public class Config implements Serializable {
 
+    public enum Variant {
+
+        @SerializedName("standard")
+        STANDARD(0),
+        @SerializedName("log-only")
+        LOG_ONLY(1),
+        @SerializedName("write-database")
+        WRITE_DATABASE(2);
+
+        private final int v;
+
+        private Variant(int v) {
+            this.v = v;
+        }
+    }
+
     private static final long serialVersionUID = 1L;
 
-    static int LAST_MAJ_NUMBER = 0;
-    static int LAST_MIN_NUMBER = 3;
-    static int LAST_REV_NUMBER = 0;
+    final static int LAST_MAJ_NUMBER = 0;
+    final static int LAST_MIN_NUMBER = 3;
+    final static int LAST_REV_NUMBER = 0;
 
     private int majNumber;
     private int minNumber;
     private int revNumber;
 
     private String installationName = "example";
+    private Variant variant = Variant.STANDARD;
 
     private List<ProgramConfig> programs;
     private MySQLConfig mySQL;
@@ -85,6 +103,14 @@ public class Config implements Serializable {
 
     public void setInstallationName(String installationName) {
         this.installationName = installationName;
+    }
+
+    public Variant getVariant() {
+        return variant;
+    }
+
+    public void setVariant(Variant variant) {
+        this.variant = variant;
     }
 
     public List<ProgramConfig> getPrograms() {
