@@ -55,8 +55,10 @@ public class Operation {
 
             case DEFAULT:
                 defaultProgram(cfg, now);
+                break;
             case SHUTDOWN:
                 shutdownProgram(cfg);
+                break;
             case ONLY_SOLAREDGE: {
 
                 Long start = null;
@@ -74,6 +76,7 @@ public class Operation {
                 }
 
                 solarEdgeProgram(cfg, start, end, now);
+                break;
             }
         }
     }
