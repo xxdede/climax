@@ -240,7 +240,7 @@ public class DatabaseManager {
         }
     }
 
-    public TreeMap<LocalDateTime, EnergyStatus> retrieveLastTwoEnergyStatus() {
+    public TreeMap<LocalDateTime, EnergyStatus> retrieveLastEnergyStatus(int count) {
 
         if (persist == null) {
             return null;
@@ -250,10 +250,10 @@ public class DatabaseManager {
 
         try {
 
-            persist.addSuggestedTableName(EnergyStatus.class, SOLAR_EDGE_TABLE);
+            persist.addSuggestedClassTableName(EnergyStatus.class, SOLAR_EDGE_TABLE);
             List<EnergyStatus> ess = persist.readList(EnergyStatus.class,
                     "SELECT * FROM `" + SOLAR_EDGE_TABLE
-                    + "` ORDER BY `time_sec` DESC LIMIT 2");
+                    + "` ORDER BY `time_sec` DESC LIMIT " + count);
             persist.clearSuggestedTableNames();
 
             if (ess != null) {
@@ -270,7 +270,66 @@ public class DatabaseManager {
         return tm;
     }
 
-    public TreeMap<LocalDateTime, HVACStatus> retrieveLastFourHVACStatus(String deviceOrTableName, int offset) {
+    public TreeMap<LocalDateTime, EnergyStatus> splitQuarterOfHourToTenMinutesEnergyStatuses(TreeMap<LocalDateTime, EnergyStatus> quartered) {
+
+        TreeMap<LocalDateTime, EnergyStatus> tenned = new TreeMap<>();
+
+        for (LocalDateTime moment : quartered.keySet()) {
+
+            final LocalDateTime momentAlignedToQuarter = Utility.normalizeToQuarterOfHour(moment);
+
+            final LocalDateTime momentAlignedToTen = Utility.normalizeToTenMinutes(moment);
+            final LocalDateTime momentAlignedToTenPlusTen = momentAlignedToTen.plusMinutes(10);
+
+            EnergyStatus es15 = quartered.get(moment);
+
+            EnergyStatus es10 = tenned.get(momentAlignedToTen);
+            EnergyStatus es10plus10 = tenned.get(momentAlignedToTenPlusTen);
+
+            if (es10 == null) {
+
+                es10 = new EnergyStatus(Utility.timestamp(momentAlignedToTen), 0.0, 0.0, 0.0, 0.0, 0.0);
+                tenned.put(momentAlignedToTen, es10);
+            }
+            if (es10plus10 == null) {
+
+                es10plus10 = new EnergyStatus(Utility.timestamp(momentAlignedToTenPlusTen), 0.0, 0.0, 0.0, 0.0, 0.0);
+                tenned.put(momentAlignedToTenPlusTen, es10plus10);
+            }
+
+            switch (momentAlignedToQuarter.getMinute()) {
+
+                case 0:
+                    // Here es10 is HH:00
+                    es10.importFromAnother(es15, 1.0 * 2 / 3);
+                    // And es10plus10 is HH:10
+                    es10plus10.importFromAnother(es15, 1.0 * 1 / 3);
+                    break;
+                case 15:
+                    // Here es10 is HH:10
+                    es10.importFromAnother(es15, 1.0 * 1 / 3);
+                    // And es10plus10 is HH:20
+                    es10plus10.importFromAnother(es15, 1.0 * 2 / 3);
+                    break;
+                case 30:
+                    // Here es10 is HH:30
+                    es10.importFromAnother(es15, 1.0 * 2 / 3);
+                    // And es10plus10 is HH:40
+                    es10plus10.importFromAnother(es15, 1.0 * 1 / 3);
+                    break;
+                case 45:
+                    // Here es10 is HH:40
+                    es10.importFromAnother(es15, 1.0 * 1 / 3);
+                    // And es10plus10 is HH:50
+                    es10plus10.importFromAnother(es15, 1.0 * 2 / 3);
+                    break;
+            }
+        }
+
+        return tenned;
+    }
+
+    public TreeMap<LocalDateTime, HVACStatus> retrieveLastHVACStatus(String deviceOrTableName, int offset, int count) {
 
         if (persist == null) {
             return null;
@@ -280,12 +339,11 @@ public class DatabaseManager {
 
         try {
 
-            persist.addSuggestedTableName(HVACStatus.class, deviceOrTableName);
+            persist.addSuggestedClassTableName(HVACStatus.class, deviceOrTableName);
             List<HVACStatus> hss = persist.readList(HVACStatus.class,
-                    "SELECT * FROM `?`"
+                    "SELECT * FROM `" + deviceOrTableName + "`"
                     + " WHERE offset = ?"
-                    + " ORDER BY `time_sec` DESC LIMIT 4",
-                    deviceOrTableName, offset);
+                    + " ORDER BY `time_sec` DESC LIMIT " + count, offset);
             persist.clearSuggestedTableNames();
 
             if (hss != null) {
