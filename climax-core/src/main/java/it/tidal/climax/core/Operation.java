@@ -83,34 +83,46 @@ public class Operation {
 
     private static void shutdownProgram(Config cfg) {
 
-        for (CoolAutomationDeviceConfig cadc : cfg.getCoolAutomation().getDevices()) {
+        for (CoolAutomationDeviceConfig cadc
+                : cfg.getCoolAutomation().getDevices()) {
 
-            // Check status of device
             final String name = cadc.getName();
-            final CoolAutomationManager mgr = CoolAutomationManager.getInstance(cadc);
-            final CoolAutomation preCa = mgr.getDeviceData();
 
-            if (preCa.getStatus() == CoolAutomation.Status.OFF) {
+            try {
 
-                l.info("Device \"" + name + "\" already off...");
+                // Check status of device
+                final CoolAutomationManager mgr;
+                final CoolAutomation preCa;
 
-            } else if (!Variant.LOG_ONLY.equals(cfg.getVariant())) {
+                mgr = CoolAutomationManager.getInstance(cadc);
+                preCa = mgr.getDeviceData();
 
-                CoolAutomation postCa = mgr.setAll(preCa,
-                        preCa.getOpMode(), preCa.getFanSpeed(),
-                        CoolAutomation.Status.OFF, 0);
+                if (preCa.getStatus() == CoolAutomation.Status.OFF) {
 
-                if (postCa != null) {
-                    l.info("Device \"" + name + "\" turned off.");
-                } else {
-                    l.error("Something went wrong while turning off device \"" + name + "\"!");
+                    l.info("Device \"" + name + "\" already off...");
+
+                } else if (!Variant.LOG_ONLY.equals(cfg.getVariant())) {
+
+                    CoolAutomation postCa = mgr.setAll(preCa,
+                            preCa.getOpMode(), preCa.getFanSpeed(),
+                            CoolAutomation.Status.OFF, 0);
+
+                    if (postCa != null) {
+                        l.info("Device \"" + name + "\" turned off.");
+                    } else {
+                        l.error("Something went wrong while turning off"
+                                + " device \"{}\"!", name);
+                    }
+
+                    // Shutdown usually is triggered and not scheduled
+                    // so we do not add its data to database
                 }
 
-                // Shutdown usually is triggered and not scheduled
-                // so we do not add it to database
-            }
+                mgr.disconnect();
+            } catch (Exception ex) {
 
-            mgr.disconnect();
+                l.error("A problem occurred while turning off device \"" + name + "\"!", ex);
+            }
         }
     }
 
