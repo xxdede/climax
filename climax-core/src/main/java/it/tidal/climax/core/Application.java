@@ -1,10 +1,8 @@
 package it.tidal.climax.core;
 
 import it.tidal.climax.config.Config;
-import it.tidal.climax.config.CoolAutomationDeviceConfig;
 import it.tidal.climax.core.Operation.Program;
 import it.tidal.climax.extensions.managers.ConfigManager;
-import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
 import java.io.File;
 import java.time.LocalDateTime;
@@ -55,6 +53,7 @@ public class Application {
             return;
         }
 
+        /*
         if (cfg.getVariant() == Config.Variant.LOG_ONLY) {
 
             l.info(GsonFactory.prettyInstance().toJson(cfg));
@@ -66,7 +65,7 @@ public class Application {
                         + ConfigManager.suitableOperationMode(cfg, dev.getName(), NOW));
             }
         }
-
+         */
         Program prg = Program.DEFAULT;
 
         if (args.length > 1) {
