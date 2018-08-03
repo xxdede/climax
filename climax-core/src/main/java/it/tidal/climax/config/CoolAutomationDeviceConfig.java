@@ -37,6 +37,7 @@ public class CoolAutomationDeviceConfig implements Serializable, DeviceFamiliabl
     private String lineId;
     private Status status;
     private List<GenericDeviceConfig> related;
+    private String dbName;
 
     @Override
     public DeviceFamily getDeviceFamily() {
@@ -90,5 +91,13 @@ public class CoolAutomationDeviceConfig implements Serializable, DeviceFamiliabl
 
     public void setRelated(List<GenericDeviceConfig> related) {
         this.related = related;
+    }
+
+    public String getDbName() {
+        return dbName;
+    }
+
+    public void setDbName(String dbName) {
+        this.dbName = dbName;
     }
 }

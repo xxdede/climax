@@ -32,6 +32,7 @@ public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
     private String ipAddress;
     private Integer port;
     private Type type;
+    private String dbName;
 
     @Override
     public DeviceFamily getDeviceFamily() {
@@ -69,5 +70,13 @@ public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
 
     public void setType(Type type) {
         this.type = type;
+    }
+
+    public String getDbName() {
+        return dbName;
+    }
+
+    public void setDbName(String dbName) {
+        this.dbName = dbName;
     }
 }
