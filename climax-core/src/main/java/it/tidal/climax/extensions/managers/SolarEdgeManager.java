@@ -55,19 +55,6 @@ public class SolarEdgeManager {
         return "" + url + "/site/" + siteId + "/";
     }
 
-    public int getAlignedMinute(int minute) {
-
-        if (minute < 15) {
-            return 0;
-        } else if (minute < 30) {
-            return 15;
-        } else if (minute < 45) {
-            return 30;
-        } else {
-            return 45;
-        }
-    }
-
     public SolarEdgeEnergy getEnergyDetails(long endTs) {
 
         return getEnergyDetails(Utility.localDateTime(endTs));
@@ -92,12 +79,10 @@ public class SolarEdgeManager {
 
             final DateTimeFormatter dtf = Utility.basicDateTimeFormatter;
 
-            aEnd = end.withMinute(getAlignedMinute(end.getMinute()))
-                    .withSecond(0).withNano(0);
+            aEnd = Utility.normalizeToQuarterOfHour(end);
 
             if (start != null) {
-                aStart = start.withMinute(getAlignedMinute(start.getMinute()))
-                        .withSecond(0).withNano(0);
+                aStart = Utility.normalizeToQuarterOfHour(start);
             } else {
                 aStart = aEnd.minusMinutes(15);
             }
