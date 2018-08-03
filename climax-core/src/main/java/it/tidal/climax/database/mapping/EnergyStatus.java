@@ -90,4 +90,42 @@ CREATE TABLE `solar_edge_energy` (
     public void setPurchased(Double purchased) {
         this.purchased = purchased;
     }
+
+    public void importFromAnother(EnergyStatus es, double factor) {
+
+        if (production == null) {
+            production = 0.0;
+        }
+        if (es.getProduction() != null) {
+            production += factor * es.getProduction();
+        }
+
+        if (consumption == null) {
+            consumption = 0.0;
+        }
+        if (es.getConsumption() != null) {
+            consumption += factor * es.getConsumption();
+        }
+
+        if (selfConsumption == null) {
+            selfConsumption = 0.0;
+        }
+        if (es.getSelfConsumption() != null) {
+            selfConsumption += factor * es.getSelfConsumption();
+        }
+
+        if (feedIn == null) {
+            feedIn = 0.0;
+        }
+        if (es.getFeedIn() != null) {
+            feedIn += factor * es.getFeedIn();
+        }
+
+        if (purchased == null) {
+            purchased = 0.0;
+        }
+        if (es.getPurchased() != null) {
+            purchased += factor * es.getPurchased();
+        }
+    }
 }
