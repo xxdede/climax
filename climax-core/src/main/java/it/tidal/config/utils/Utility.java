@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -84,15 +83,39 @@ public class Utility {
         }
     }
 
-    public static long normalizedNow(long sec) {
+    public static long normalizeToTenMinutes(long ts) {
 
-        final long ts = new Date().getTime() / 1000;
+        return normalizeTimestamp(ts, 600);
+    }
+
+    public static long normalizeToQuarterOfHour(long ts) {
+
+        return normalizeTimestamp(ts, 900);
+    }
+
+    public static long normalizeTimestamp(long ts, long sec) {
 
         if (sec <= 0) {
             return ts;
         }
 
         return ts - (ts % sec);
+    }
+
+    public static LocalDateTime normalizeToTenMinutes(LocalDateTime ldt) {
+
+        return normalize(ldt, 10);
+    }
+
+    public static LocalDateTime normalizeToQuarterOfHour(LocalDateTime ldt) {
+
+        return normalize(ldt, 15);
+    }
+
+    public static LocalDateTime normalize(LocalDateTime ldt, int min) {
+
+        final int tempMins = ldt.getMinute();
+        return ldt.withNano(0).withSecond(0).minusMinutes(tempMins % min);
     }
 
     public static long timestamp(LocalDateTime ldt) {
