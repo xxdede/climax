@@ -25,6 +25,8 @@ public class DatabaseManager {
 
     private static Log l = Log.prepare(DatabaseManager.class.getSimpleName());
 
+    private final static String SOLAR_EDGE_TABLE = "solar_edge_energy";
+
     private Persist persist = null;
 
     public DatabaseManager(String host, int port,
@@ -182,8 +184,8 @@ public class DatabaseManager {
         for (Long ts : mmap.keySet()) {
 
             // Check if value is already stored
-            if (persist.read(Long.class, "SELECT COUNT(*) FROM `solar_edge_energy`"
-                    + " WHERE `time_sec` = ?", ts) != 0) {
+            if (persist.read(Long.class, "SELECT COUNT(*) FROM `"
+                    + SOLAR_EDGE_TABLE + "` WHERE `time_sec` = ?", ts) != 0) {
                 l.info("Database already contain SolarEdge data for timestamp "
                         + ts + ", skipping...");
                 continue;
@@ -196,7 +198,7 @@ public class DatabaseManager {
             StringBuilder sql = new StringBuilder(64);
             StringBuilder values = new StringBuilder(64);
 
-            sql.append("INSERT INTO `solar_edge_energy` (`time_sec`");
+            sql.append("INSERT INTO `" + SOLAR_EDGE_TABLE + "` (`time_sec`");
             values.append("(").append(ts);
 
             tempValue = map.get(SolarEdge.MeterType.Production);
@@ -248,13 +250,16 @@ public class DatabaseManager {
 
         try {
 
+            persist.addSuggestedTableName(EnergyStatus.class, SOLAR_EDGE_TABLE);
             List<EnergyStatus> ess = persist.readList(EnergyStatus.class,
-                    "SELECT * FROM `solar_edge_energy`"
-                    + " ORDER BY `time_sec` DESC LIMIT 2");
+                    "SELECT * FROM `" + SOLAR_EDGE_TABLE
+                    + "` ORDER BY `time_sec` DESC LIMIT 2");
+            persist.clearSuggestedTableNames();
 
-            for (EnergyStatus es : ess) {
-
-                tm.put(Utility.localDateTime(es.getTimestamp()), es);
+            if (ess != null) {
+                for (EnergyStatus es : ess) {
+                    tm.put(Utility.localDateTime(es.getTimestamp()), es);
+                }
             }
 
         } catch (Exception ex) {
@@ -275,15 +280,18 @@ public class DatabaseManager {
 
         try {
 
+            persist.addSuggestedTableName(HVACStatus.class, deviceOrTableName);
             List<HVACStatus> hss = persist.readList(HVACStatus.class,
                     "SELECT * FROM `?`"
                     + " WHERE offset = ?"
                     + " ORDER BY `time_sec` DESC LIMIT 4",
                     deviceOrTableName, offset);
+            persist.clearSuggestedTableNames();
 
-            for (HVACStatus hs : hss) {
-
-                tm.put(Utility.localDateTime(hs.getTimestamp()), hs);
+            if (hss != null) {
+                for (HVACStatus hs : hss) {
+                    tm.put(Utility.localDateTime(hs.getTimestamp()), hs);
+                }
             }
 
         } catch (Exception ex) {
