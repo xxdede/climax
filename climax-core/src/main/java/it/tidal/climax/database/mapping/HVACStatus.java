@@ -44,6 +44,9 @@ CREATE TABLE `daikin_1` (
     Double roomTemperature;
     Double setTemperature;
 
+    public HVACStatus() {
+    }
+
     public HVACStatus(String name, long timestamp,
             int offset, CoolAutomation ca) {
 

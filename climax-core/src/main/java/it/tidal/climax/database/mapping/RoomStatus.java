@@ -80,6 +80,9 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
     Double perceived;
     Illness.Level illness;
 
+    public RoomStatus() {
+    }
+
     public RoomStatus(String name,
             long timestamp, double temperature,
             Integer humidity, Integer co2,

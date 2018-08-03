@@ -27,6 +27,9 @@ CREATE TABLE `solar_edge_energy` (
     Double feedIn;
     Double purchased;
 
+    public EnergyStatus() {
+    }
+
     public EnergyStatus(long timestamp, Double production, Double consumption,
             Double selfConsumption, Double feedIn, Double purchased) {
 
