@@ -37,8 +37,6 @@ public class ConfigManager {
             BufferedReader reader = new BufferedReader(new FileReader(path));
             T object = GsonFactory.instance().fromJson(reader, type);
 
-            l.trace("Found config:\n{}", Log.json(object, true));
-
             return object;
         } catch (JsonIOException
                 | JsonSyntaxException
