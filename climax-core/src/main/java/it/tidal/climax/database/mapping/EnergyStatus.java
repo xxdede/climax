@@ -1,6 +1,7 @@
 package it.tidal.climax.database.mapping;
 
 import java.io.Serializable;
+import net.sf.persist.annotations.Column;
 
 public class EnergyStatus implements Serializable {
 
@@ -41,6 +42,7 @@ CREATE TABLE `solar_edge_energy` (
         this.purchased = purchased;
     }
 
+    @Column(name = "time_sec")
     public long getTimestamp() {
         return timestamp;
     }

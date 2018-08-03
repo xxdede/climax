@@ -8,6 +8,8 @@ package it.tidal.climax.database.mapping;
 import it.tidal.climax.core.Illness;
 import it.tidal.config.utils.Utility;
 import java.io.Serializable;
+import net.sf.persist.annotations.Column;
+import net.sf.persist.annotations.NoColumn;
 
 public class RoomStatus implements Serializable {
 
@@ -104,6 +106,7 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
         this(null, timestamp, temperature, humidity, co2, perceived, illness);
     }
 
+    @NoColumn
     public String getName() {
         return name;
     }
@@ -112,6 +115,7 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
         this.name = name;
     }
 
+    @Column(name = "time_sec")
     public long getTimestamp() {
         return timestamp;
     }

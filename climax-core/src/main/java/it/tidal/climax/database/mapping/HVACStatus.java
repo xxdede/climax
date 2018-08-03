@@ -2,6 +2,8 @@ package it.tidal.climax.database.mapping;
 
 import it.tidal.climax.extensions.data.CoolAutomation;
 import java.io.Serializable;
+import net.sf.persist.annotations.Column;
+import net.sf.persist.annotations.NoColumn;
 
 public class HVACStatus implements Serializable {
 
@@ -98,6 +100,7 @@ CREATE TABLE `daikin_1` (
         this.setTemperature = ca.getSetTemperature();
     }
 
+    @NoColumn
     public String getName() {
         return name;
     }
@@ -106,6 +109,7 @@ CREATE TABLE `daikin_1` (
         this.name = name;
     }
 
+    @Column(name = "time_sec")
     public long getTimestamp() {
         return timestamp;
     }
