@@ -1,6 +1,7 @@
 package it.tidal.climax.extensions.managers;
 
 import it.tidal.climax.config.MySQLConfig;
+import it.tidal.climax.database.mapping.EnergyStatus;
 import it.tidal.climax.database.mapping.HVACStatus;
 import it.tidal.climax.database.mapping.RoomStatus;
 import it.tidal.climax.extensions.data.SolarEdge;
@@ -9,7 +10,9 @@ import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.TreeMap;
 import net.sf.persist.Persist;
 
@@ -233,6 +236,62 @@ public class DatabaseManager {
             //l.debug(sql.toString());
             persist.execute(sql.toString());
         }
+    }
+
+    public TreeMap<LocalDateTime, EnergyStatus> retrieveLastTwoEnergyStatus() {
+
+        if (persist == null) {
+            return null;
+        }
+
+        TreeMap<LocalDateTime, EnergyStatus> tm = new TreeMap<>();
+
+        try {
+
+            List<EnergyStatus> ess = persist.readList(EnergyStatus.class,
+                    "SELECT * FROM `solar_edge_energy`"
+                    + " ORDER BY `time_sec` DESC LIMIT 2");
+
+            for (EnergyStatus es : ess) {
+
+                tm.put(Utility.localDateTime(es.getTimestamp()), es);
+            }
+
+        } catch (Exception ex) {
+
+            l.error("A problem occurred while retrieving SolarEdge energy!", ex);
+        }
+
+        return tm;
+    }
+
+    public TreeMap<LocalDateTime, HVACStatus> retrieveLastFourHVACStatus(String deviceOrTableName, int offset) {
+
+        if (persist == null) {
+            return null;
+        }
+
+        TreeMap<LocalDateTime, HVACStatus> tm = new TreeMap<>();
+
+        try {
+
+            List<HVACStatus> hss = persist.readList(HVACStatus.class,
+                    "SELECT * FROM `?`"
+                    + " WHERE offset = ?"
+                    + " ORDER BY `time_sec` DESC LIMIT 4",
+                    deviceOrTableName, offset);
+
+            for (HVACStatus hs : hss) {
+
+                tm.put(Utility.localDateTime(hs.getTimestamp()), hs);
+            }
+
+        } catch (Exception ex) {
+
+            l.error("A problem occurred while retrieving SolarEdge energy!", ex);
+        }
+
+        return tm;
     }
 
     public void dispose() {
