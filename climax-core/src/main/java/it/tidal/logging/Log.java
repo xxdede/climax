@@ -24,7 +24,7 @@ public class Log {
         return new Log(name);
     }
 
-    public static String json(Object object, boolean prettyPrint) {
+    public void json(Object object, boolean prettyPrint) {
 
         Gson gson = null;
 
@@ -34,7 +34,7 @@ public class Log {
             gson = GsonFactory.instance();
         }
 
-        return gson.toJson(object);
+        debug(gson.toJson(object));
     }
 
     public void trace(String msg) {
