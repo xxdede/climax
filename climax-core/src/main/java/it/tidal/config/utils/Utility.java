@@ -9,6 +9,9 @@ import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
@@ -20,6 +23,7 @@ import java.util.Locale;
  */
 public class Utility {
 
+    public static final ZoneId systemZone = ZoneId.systemDefault();
     public static DateTimeFormatter basicDateTimeFormatter
             = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     public static final NumberFormat americanDoubleFormatter
@@ -80,7 +84,7 @@ public class Utility {
         }
     }
 
-    public static long normalizedNow(int sec) {
+    public static long normalizedNow(long sec) {
 
         final long ts = new Date().getTime() / 1000;
 
@@ -89,6 +93,18 @@ public class Utility {
         }
 
         return ts - (ts % sec);
+    }
+
+    public static long timestamp(LocalDateTime ldt) {
+
+        return ldt.atZone(systemZone).toEpochSecond();
+    }
+
+    public static LocalDateTime localDateTime(long timestamp) {
+
+        return Instant.ofEpochSecond(timestamp)
+                .atZone(systemZone)
+                .toLocalDateTime();
     }
 
     public static String pad(String filler, int totalLetters,

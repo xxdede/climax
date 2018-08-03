@@ -10,9 +10,7 @@ import it.tidal.climax.extensions.data.SolarEdgeEnergy;
 import it.tidal.config.utils.Utility;
 import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -72,21 +70,12 @@ public class SolarEdgeManager {
 
     public SolarEdgeEnergy getEnergyDetails(long endTs) {
 
-        final LocalDateTime end = LocalDateTime.
-                ofInstant(Instant.ofEpochSecond(endTs), ZoneId.systemDefault());
-
-        return getEnergyDetails(end);
+        return getEnergyDetails(Utility.localDateTime(endTs));
     }
 
     public SolarEdgeEnergy getEnergyDetails(long startTs, long endTs) {
 
-        final LocalDateTime end = LocalDateTime.
-                ofInstant(Instant.ofEpochSecond(endTs), ZoneId.systemDefault());
-
-        final LocalDateTime start = LocalDateTime.
-                ofInstant(Instant.ofEpochSecond(startTs), ZoneId.systemDefault());
-
-        return getEnergyDetails(start, end);
+        return getEnergyDetails(Utility.localDateTime(startTs), Utility.localDateTime(endTs));
     }
 
     public SolarEdgeEnergy getEnergyDetails(LocalDateTime end) {

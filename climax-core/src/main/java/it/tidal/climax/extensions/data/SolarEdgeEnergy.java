@@ -3,7 +3,6 @@ package it.tidal.climax.extensions.data;
 import it.tidal.config.utils.Utility;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TreeMap;
@@ -81,7 +80,7 @@ public class SolarEdgeEnergy implements Serializable {
 
                 final String d = m.getValues().get(0).getDate();
                 final LocalDateTime ldt = LocalDateTime.parse(d, Utility.basicDateTimeFormatter);
-                return ldt.atZone(ZoneId.systemDefault()).toEpochSecond();
+                return Utility.timestamp(ldt);
             }
         }
 
@@ -99,8 +98,9 @@ public class SolarEdgeEnergy implements Serializable {
             if (m.getValues() != null && m.getValues() != null) {
                 for (SolarEdgeValue v : m.getValues()) {
 
-                    final long ts = LocalDateTime.parse(v.getDate(), Utility.basicDateTimeFormatter)
-                            .atZone(ZoneId.systemDefault()).toEpochSecond();
+                    final long ts = Utility
+                            .timestamp(LocalDateTime.parse(v.getDate(),
+                                    Utility.basicDateTimeFormatter));
 
                     HashMap<SolarEdge.MeterType, Double> subMap = ret.get(ts);
 

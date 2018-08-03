@@ -54,7 +54,7 @@ public class Operation {
         switch (prg) {
 
             case DEFAULT:
-                defaultProgram(cfg);
+                defaultProgram(cfg, now);
             case SHUTDOWN:
                 shutdownProgram(cfg);
             case ONLY_SOLAREDGE: {
@@ -78,7 +78,10 @@ public class Operation {
         }
     }
 
-    private static void defaultProgram(Config cfg) {
+    private static void defaultProgram(Config cfg, LocalDateTime now) {
+
+        DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
+
     }
 
     private static void shutdownProgram(Config cfg) {

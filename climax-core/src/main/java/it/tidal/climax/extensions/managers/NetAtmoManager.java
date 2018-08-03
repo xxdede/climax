@@ -9,6 +9,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import it.tidal.climax.config.NetAtmoConfig;
 import it.tidal.climax.extensions.data.NetAtmo;
+import it.tidal.config.utils.Utility;
 import it.tidal.gson.GsonFactory;
 import it.tidal.logging.Log;
 import java.io.File;
@@ -17,9 +18,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +39,6 @@ public class NetAtmoManager {
     public static final String URL_THERMO_DATA = "https://api.netatmo.com/api/getthermostatsdata";
     public static final String URL_TOKEN = "https://api.netatmo.com/oauth2/token";
     public static final String TMP_CREDENTIALS_PATH = "/tmp/climax-netatmo-tokens";
-
-    private final ZoneId systemZone = ZoneId.systemDefault();
 
     private String accessToken;
     private String refreshToken;
@@ -67,9 +64,7 @@ public class NetAtmoManager {
             epochSeconds = ((Double) temp).longValue();
         }
 
-        LocalDateTime expirationTime = Instant.ofEpochSecond(epochSeconds)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
+        LocalDateTime expirationTime = Utility.localDateTime(epochSeconds);
 
         this.accessToken = (String) map.get("accessToken");
         this.refreshToken = (String) map.get("refreshToken");
@@ -82,7 +77,7 @@ public class NetAtmoManager {
 
         data.put("accessToken", accessToken);
         data.put("refreshToken", refreshToken);
-        data.put("expiration", expiration.atZone(systemZone).toEpochSecond());
+        data.put("expiration", Utility.timestamp(expiration));
 
         return data;
     }
