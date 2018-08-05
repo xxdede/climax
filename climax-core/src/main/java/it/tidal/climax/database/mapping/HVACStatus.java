@@ -183,4 +183,17 @@ CREATE TABLE `daikin_1` (
     public void setSetTemperature(Double setTemperature) {
         this.setTemperature = setTemperature;
     }
+
+    public String getSummary() {
+
+        final CoolAutomation.Status st = getStatusEnum();
+        final CoolAutomation.OpMode om = getModeEnum();
+        final CoolAutomation.FanSpeed fs = getFanSpeedEnum();
+
+        return " measured: " + roomTemperature
+                + " - " + (st != null ? st.getName() : "?")
+                + ", " + (om != null ? om.getName() : "?")
+                + ", " + (fs != null ? fs.getName() : "?")
+                + ", set: " + setTemperature;
+    }
 }
