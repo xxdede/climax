@@ -57,15 +57,15 @@ CREATE TABLE `daikin_1` (
         this.offset = offset;
 
         if (ca.getStatus() != null) {
-            this.status = ca.getStatus().ordinal();
+            this.status = ca.getStatus().getValue();
         }
 
         if (ca.getOpMode() != null) {
-            this.mode = ca.getOpMode().ordinal();
+            this.mode = ca.getOpMode().getValue();
         }
 
         if (ca.getFanSpeed() != null) {
-            this.fanSpeed = ca.getFanSpeed().ordinal();
+            this.fanSpeed = ca.getFanSpeed().getValue();
         }
 
         this.roomTemperature = ca.getRoomTemperature();
@@ -79,19 +79,19 @@ CREATE TABLE `daikin_1` (
         }
 
         if (ca.getStatus() != null) {
-            this.status = ca.getStatus().ordinal();
+            this.status = ca.getStatus().getValue();
         } else {
             this.status = null;
         }
 
         if (ca.getOpMode() != null) {
-            this.mode = ca.getOpMode().ordinal();
+            this.mode = ca.getOpMode().getValue();
         } else {
             this.mode = null;
         }
 
         if (ca.getFanSpeed() != null) {
-            this.fanSpeed = ca.getFanSpeed().ordinal();
+            this.fanSpeed = ca.getFanSpeed().getValue();
         } else {
             this.fanSpeed = null;
         }
@@ -130,12 +130,24 @@ CREATE TABLE `daikin_1` (
         return status;
     }
 
+    @NoColumn
+    public CoolAutomation.Status getStatusEnum() {
+
+        return CoolAutomation.Status.fromInteger(status);
+    }
+
     public void setStatus(Integer status) {
         this.status = status;
     }
 
     public Integer getMode() {
         return mode;
+    }
+
+    @NoColumn
+    public CoolAutomation.OpMode getModeEnum() {
+
+        return CoolAutomation.OpMode.fromInteger(mode);
     }
 
     public void setMode(Integer mode) {
@@ -148,6 +160,12 @@ CREATE TABLE `daikin_1` (
 
     public void setFanSpeed(Integer fanSpeed) {
         this.fanSpeed = fanSpeed;
+    }
+
+    @NoColumn
+    public CoolAutomation.FanSpeed getFanSpeedEnum() {
+
+        return CoolAutomation.FanSpeed.fromInteger(fanSpeed);
     }
 
     public Double getRoomTemperature() {

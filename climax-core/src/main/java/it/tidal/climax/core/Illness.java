@@ -15,12 +15,89 @@ public class Illness implements Serializable {
 
     public enum Level {
 
-        NONE, // Optimal situation
-        LIGHT, // Very light harassment
-        MEDIUM, // Simple malaise, limit heavy physical activity
-        HIGH, // Malaise, danger, avoid physical activity
-        GRAVE, // Serious danger, stop all activities
-        PANIC   // Imminent heat stroke, danger of death
+        NONE(0),
+        LIGHT(1),
+        MEDIUM(2),
+        HIGH(3),
+        GRAVE(4),
+        PANIC(5);
+
+        private final int v;
+
+        private Level(int v) {
+            this.v = v;
+        }
+
+        public int getValue() {
+
+            return v;
+        }
+
+        public String getSlug() {
+
+            switch (v) {
+
+                case 0:
+                    return "none";
+                case 1:
+                    return "light";
+                case 2:
+                    return "medium";
+                case 3:
+                    return "high";
+                case 4:
+                    return "grave";
+                case 5:
+                    return "panic";
+            }
+
+            return "?";
+        }
+
+        public String getLongDescription() {
+
+            switch (v) {
+
+                case 0:
+                    return "Optimal situation";
+                case 1:
+                    return "Very light harassment";
+                case 2:
+                    return "Simple malaise, limit heavy physical activity";
+                case 3:
+                    return "Malaise, danger, avoid physical activity";
+                case 4:
+                    return "Serious danger, stop all activities";
+                case 5:
+                    return "Imminent heat stroke, danger of death";
+            }
+
+            return "?";
+        }
+
+        public static Level fromString(String s) {
+
+            for (Level il : Level.values()) {
+                if (il.getSlug().equalsIgnoreCase(s)) {
+                    return il;
+                }
+            }
+
+            return null;
+        }
+
+        public static Level fromInteger(Integer i) {
+
+            if (i != null) {
+                for (Level il : Level.values()) {
+                    if (il.getValue() == i) {
+                        return il;
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 
     public static int compare(Illness.Level il1, Illness.Level il2) {

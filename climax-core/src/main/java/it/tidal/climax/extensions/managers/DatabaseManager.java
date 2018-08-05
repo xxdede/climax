@@ -108,7 +108,7 @@ public class DatabaseManager {
         if (status.getIllness() != null) {
 
             sql.append(",`illness`");
-            values.append(",").append(status.getIllness().ordinal());
+            values.append(",").append(status.getIllness().getValue());
         }
 
         sql.append(")");

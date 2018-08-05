@@ -17,25 +17,179 @@ public class CoolAutomation implements Serializable {
 
     public enum Status {
 
-        OFF,
-        ON
+        OFF(0),
+        ON(1);
+
+        private final int v;
+
+        private Status(int v) {
+            this.v = v;
+        }
+
+        public String getName() {
+
+            switch (v) {
+
+                case 0:
+                    return "OFF";
+                case 1:
+                    return "ON";
+            }
+
+            return "?";
+        }
+
+        public int getValue() {
+
+            return v;
+        }
+
+        public static Status fromString(String s) {
+
+            for (Status st : Status.values()) {
+                if (st.getName().equalsIgnoreCase(s)) {
+                    return st;
+                }
+            }
+
+            return null;
+        }
+
+        public static Status fromInteger(Integer i) {
+
+            if (i != null) {
+                for (Status st : Status.values()) {
+                    if (st.getValue() == i) {
+                        return st;
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 
     public enum FanSpeed {
 
-        Low,
-        Med,
-        High
+        LOW(0),
+        MEDIUM(1),
+        HIGH(2);
+
+        private final int v;
+
+        private FanSpeed(int v) {
+            this.v = v;
+        }
+
+        public int getValue() {
+
+            return v;
+        }
+
+        public String getName() {
+
+            switch (v) {
+
+                case 0:
+                    return "Low";
+                case 1:
+                    return "Med";
+                case 2:
+                    return "High";
+            }
+
+            return "?";
+        }
+
+        public static FanSpeed fromString(String s) {
+
+            for (FanSpeed fs : FanSpeed.values()) {
+                if (fs.getName().equalsIgnoreCase(s)) {
+                    return fs;
+                }
+            }
+
+            return null;
+        }
+
+        public static FanSpeed fromInteger(Integer i) {
+
+            if (i != null) {
+                for (FanSpeed fs : FanSpeed.values()) {
+                    if (fs.getValue() == i) {
+                        return fs;
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 
     public enum OpMode {
 
-        Cool,
-        Heat,
-        Auto,
-        Dry,
-        Haux,
-        Fan
+        COOL(0),
+        HEAT(1),
+        AUTO(2),
+        DRY(3),
+        HAUX(4),
+        FAN(5);
+
+        private final int v;
+
+        private OpMode(int v) {
+            this.v = v;
+        }
+
+        public int getValue() {
+
+            return v;
+        }
+
+        public String getName() {
+
+            switch (v) {
+
+                case 0:
+                    return "Cool";
+                case 1:
+                    return "Heat";
+                case 2:
+                    return "Auto";
+                case 3:
+                    return "Dry";
+                case 4:
+                    return "Haux";
+                case 5:
+                    return "Fan";
+            }
+
+            return "?";
+        }
+
+        public static OpMode fromString(String s) {
+
+            for (OpMode om : OpMode.values()) {
+                if (om.getName().equalsIgnoreCase(s)) {
+                    return om;
+                }
+            }
+
+            return null;
+        }
+
+        public static OpMode fromInteger(Integer i) {
+
+            if (i != null) {
+                for (OpMode om : OpMode.values()) {
+                    if (om.getValue() == i) {
+                        return om;
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 
     private String name;
@@ -66,7 +220,7 @@ public class CoolAutomation implements Serializable {
         }
 
         if (tokens.length > 1) {
-            this.status = Status.valueOf(tokens[1]);
+            this.status = Status.fromString(tokens[1]);
         }
 
         if (tokens.length > 2) {
@@ -78,11 +232,11 @@ public class CoolAutomation implements Serializable {
         }
 
         if (tokens.length > 4) {
-            this.fanSpeed = FanSpeed.valueOf(tokens[4]);
+            this.fanSpeed = FanSpeed.fromString(tokens[4]);
         }
 
         if (tokens.length > 5) {
-            this.opMode = OpMode.valueOf(tokens[5]);
+            this.opMode = OpMode.fromString(tokens[5]);
         }
 
         if (tokens.length > 6) {
