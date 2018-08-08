@@ -105,10 +105,10 @@ public class DatabaseManager {
             values.append(",").append(status.getPerceived());
         }
 
-        if (status.getIllness() != null) {
+        if (status.getIllnessEnum() != null) {
 
             sql.append(",`illness`");
-            values.append(",").append(status.getIllness().getValue());
+            values.append(",").append(status.getIllnessEnum().getValue());
         }
 
         sql.append(")");
@@ -354,7 +354,37 @@ public class DatabaseManager {
 
         } catch (Exception ex) {
 
-            l.error("A problem occurred while retrieving SolarEdge energy!", ex);
+            l.error("A problem occurred while retrieving HVAC status '" + deviceOrTableName + "' energy!", ex);
+        }
+
+        return tm;
+    }
+
+    public TreeMap<LocalDateTime, RoomStatus> retrieveLastRoomStatus(String deviceOrTableName, int count) {
+
+        if (persist == null) {
+            return null;
+        }
+
+        TreeMap<LocalDateTime, RoomStatus> tm = new TreeMap<>();
+
+        try {
+
+            persist.addSuggestedClassTableName(RoomStatus.class, deviceOrTableName);
+            List<RoomStatus> rss = persist.readList(RoomStatus.class,
+                    "SELECT * FROM `" + deviceOrTableName + "`"
+                    + " ORDER BY `time_sec` DESC LIMIT " + count);
+            persist.clearSuggestedTableNames();
+
+            if (rss != null) {
+                for (RoomStatus rs : rss) {
+                    tm.put(Utility.localDateTime(rs.getTimestamp()), rs);
+                }
+            }
+
+        } catch (Exception ex) {
+
+            l.error("A problem occurred while retrieving room status '" + deviceOrTableName + "' !", ex);
         }
 
         return tm;

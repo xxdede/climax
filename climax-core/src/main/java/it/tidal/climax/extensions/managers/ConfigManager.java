@@ -154,6 +154,15 @@ public class ConfigManager {
         return candidate;
     }
 
+    public static DeviceFamiliable findDevice(Config cfg, GenericDeviceConfig deviceConfig) {
+
+        if (cfg == null || deviceConfig == null) {
+            return null;
+        }
+
+        return findDevice(cfg, deviceConfig.getName());
+    }
+
     public static DeviceFamiliable findDevice(Config cfg, String deviceName) {
 
         if (cfg == null || deviceName == null) {

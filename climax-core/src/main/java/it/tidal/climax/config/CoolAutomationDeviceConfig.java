@@ -93,6 +93,20 @@ public class CoolAutomationDeviceConfig implements Serializable, DeviceFamiliabl
         this.related = related;
     }
 
+    public GenericDeviceConfig findRelated(GenericDeviceConfig.Role role) {
+
+        if (this.related != null) {
+            for (GenericDeviceConfig gdc : this.related) {
+                if (gdc.getRole() == role) {
+                    return gdc;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Override
     public String getDbName() {
         return dbName;
     }

@@ -7,6 +7,8 @@ import net.sf.persist.annotations.NoColumn;
 
 public class HVACStatus implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /*
 
     Database table creation and queries.

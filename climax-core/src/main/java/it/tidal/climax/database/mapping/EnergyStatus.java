@@ -5,6 +5,8 @@ import net.sf.persist.annotations.Column;
 
 public class EnergyStatus implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /*
 
     Database table creation and queries.

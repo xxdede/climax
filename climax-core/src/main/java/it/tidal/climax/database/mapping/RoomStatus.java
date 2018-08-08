@@ -13,6 +13,8 @@ import net.sf.persist.annotations.NoColumn;
 
 public class RoomStatus implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /*
 
     Database table creation and queries.
@@ -80,7 +82,7 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
     Integer humidity;
     Integer co2;
     Double perceived;
-    Illness.Level illness;
+    Integer illness;
 
     public RoomStatus() {
     }
@@ -96,7 +98,13 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
         this.humidity = humidity;
         this.co2 = co2;
         this.perceived = perceived;
-        this.illness = illness;
+
+        if (illness != null) {
+            this.illness = illness.getValue();
+        } else if (humidity != null) {
+
+            this.illness = Illness.compute(temperature, humidity).getValue();
+        }
     }
 
     public RoomStatus(long timestamp, double temperature,
@@ -156,12 +164,24 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
         this.perceived = perceived;
     }
 
-    public Illness.Level getIllness() {
+    public Integer getIllness() {
         return illness;
     }
 
-    public void setIllness(Illness.Level illness) {
+    public void setIllness(Integer illness) {
         this.illness = illness;
+    }
+
+    @NoColumn
+    public Illness.Level getIllnessEnum() {
+        if (illness == null) {
+            return null;
+        }
+        return Illness.Level.fromInteger(illness);
+    }
+
+    public void setIllnessEnum(Illness.Level illness) {
+        this.illness = illness.getValue();
     }
 
     public String getDescription() {
@@ -173,6 +193,6 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
                 + ", co2: " + (co2 == null ? " - " : co2) + "ppm,"
                 + " perceived temperature: " + Utility.americanDoubleFormatter
                         .format(perceived)
-                + ", illness level: " + illness;
+                + ", illness level: " + getIllnessEnum();
     }
 }

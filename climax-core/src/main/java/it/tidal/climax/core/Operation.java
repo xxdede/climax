@@ -4,14 +4,27 @@ import com.google.gson.annotations.SerializedName;
 import it.tidal.climax.config.Config;
 import it.tidal.climax.config.Config.Variant;
 import it.tidal.climax.config.CoolAutomationDeviceConfig;
+import it.tidal.climax.config.GenericDeviceConfig;
+import it.tidal.climax.config.GenericDeviceConfig.OperationMode;
+import it.tidal.climax.database.mapping.EnergyStatus;
+import it.tidal.climax.database.mapping.HVACStatus;
+import it.tidal.climax.database.mapping.RoomStatus;
+import it.tidal.climax.extensions.data.ClimaxPack;
 import it.tidal.climax.extensions.data.CoolAutomation;
+import it.tidal.climax.extensions.data.CoolAutomation.Status;
 import it.tidal.climax.extensions.data.SolarEdgeEnergy;
+import it.tidal.climax.extensions.managers.ConfigManager;
 import it.tidal.climax.extensions.managers.CoolAutomationManager;
 import it.tidal.climax.extensions.managers.DatabaseManager;
+import it.tidal.climax.extensions.managers.NetAtmoManager;
 import it.tidal.climax.extensions.managers.SolarEdgeManager;
+import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class Operation {
 
@@ -83,8 +96,229 @@ public class Operation {
 
     private static void defaultProgram(Config cfg, LocalDateTime now) {
 
-        DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
+        final LocalDateTime normalizedNow = Utility.normalizeToTenMinutes(now);
+        final long normalizedNowTs = Utility.timestamp(normalizedNow);
+        final DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
+        final HashMap<String, ClimaxPack> cps = new HashMap<>();
 
+        // Energy statuses
+        TreeMap<LocalDateTime, EnergyStatus> ess;
+        ess = dbm.splitQuarterOfHourToTenMinutesEnergyStatuses(
+                dbm.retrieveLastEnergyStatus(4));
+
+        // HVAC statuses (pre: before last exec, post: after last exec)
+        HashMap<String, TreeMap<LocalDateTime, HVACStatus>> hssPre;
+        HashMap<String, TreeMap<LocalDateTime, HVACStatus>> hssPost;
+
+        hssPre = new HashMap<>(cfg.getCoolAutomation().getDevices().size());
+        hssPost = new HashMap<>(cfg.getCoolAutomation().getDevices().size());
+
+        // NetAtmo manager
+        NetAtmoManager nam = NetAtmoManager.getInstance(cfg.getNetAtmo(), true);
+
+        for (CoolAutomationDeviceConfig cadc
+                : cfg.getCoolAutomation().getDevices()) {
+
+            final String devName = cadc.getName();
+            final String dbName = cadc.getDbName();
+
+            // Check if climax pack exists
+            ClimaxPack cp = cps.get(devName);
+
+            if (cp == null) {
+
+                cp = new ClimaxPack();
+                cps.put(devName, cp);
+            }
+
+            // Current HVAC status
+            final CoolAutomationManager cam = CoolAutomationManager.getInstance(cadc);
+            cp.setCurrentHVACConfig(cam.getDeviceData());
+            cam.disconnect();
+
+            // Previous HVAC statuses
+            final TreeMap<LocalDateTime, HVACStatus> tempHssPre;
+            final TreeMap<LocalDateTime, HVACStatus> tempHssPost;
+
+            tempHssPre = dbm.retrieveLastHVACStatus(dbName, -1, 6);
+            tempHssPost = dbm.retrieveLastHVACStatus(dbName, 0, 6);
+
+            hssPre.put(devName, tempHssPre);
+            hssPost.put(devName, tempHssPost);
+
+            // Update climax pack
+            cp.setLastHVACStatus(tempHssPost.lastEntry().getValue());
+
+            // Room statuses (previous and current)
+            final DeviceFamiliable itp = ConfigManager.findDevice(cfg, cadc.findRelated(GenericDeviceConfig.Role.INSIDE_TEMPERATURE_PROVIDER));
+
+            if (itp != null) {
+
+                final TreeMap<LocalDateTime, RoomStatus> tempRss;
+                tempRss = dbm.retrieveLastRoomStatus(itp.getDbName(), 6);
+
+                // Update climax pack
+                cp.updateWithRoomStatuses(tempRss);
+                cp.setRoomStatus(nam.getData(itp.getName()).toRoomStatus(normalizedNowTs));
+            }
+
+            // Outside status
+            final DeviceFamiliable otp = ConfigManager.findDevice(cfg, cadc.findRelated(GenericDeviceConfig.Role.OUTSIDE_TEMPERATURE_PROVIDER));
+
+            if (otp != null) {
+
+                // Update climax pack
+                cp.setOutsideStatus(nam.getData(otp.getName()).toRoomStatus(normalizedNowTs));
+            }
+
+            // Intake status
+            final DeviceFamiliable ktp = ConfigManager.findDevice(cfg, cadc.findRelated(GenericDeviceConfig.Role.INTAKE_TEMPERATURE_PROVIDER));
+
+            if (ktp != null) {
+
+                // Update climax pack
+                cp.setIntakeStatus(nam.getData(ktp.getName()).toRoomStatus(normalizedNowTs));
+            }
+        }
+
+        if (false) {
+            // TODO: check consumption and define how many device we can turn on
+        }
+
+        // Cycling again through device to decide what to do
+        for (CoolAutomationDeviceConfig cadc
+                : cfg.getCoolAutomation().getDevices()) {
+
+            final String devName = cadc.getName();
+            final CoolAutomationManager cam = CoolAutomationManager.getInstance(cadc);
+            final OperationMode desiredOpMode = ConfigManager.suitableOperationMode(cfg, devName, normalizedNow);
+
+            final CoolAutomation current = cps.get(devName).getCurrentHVACConfig();
+            final CoolAutomation desired;
+
+            switch (desiredOpMode) {
+
+                case NOT_SPECIFIED:
+
+                    l.warn("Device \"{}\" has no suitable operation mode?!", devName);
+
+                    break;
+
+                case DISABLED:
+
+                    try {
+
+                        if (current.getStatus() != Status.OFF) {
+
+                            l.info("Device \"{}\" already {} (case {})...", devName, Status.OFF, desiredOpMode);
+
+                        } else if (!Variant.LOG_ONLY.equals(cfg.getVariant())) {
+
+                            desired = cam.setAll(current,
+                                    current.getOpMode(), current.getFanSpeed(),
+                                    Status.OFF, 0);
+
+                            if (desired != null) {
+                                l.info("Device \"{}\" turned {} (case {}).", devName, Status.OFF, desiredOpMode);
+                            } else {
+                                l.error("Something went wrong while turning device \"{}\" {} (case {})!", devName, Status.OFF, desiredOpMode);
+                            }
+                        }
+                    } catch (Exception ex) {
+
+                        l.error("A problem occurred while turning device \"" + devName + "\" " + Status.OFF + " (case " + desiredOpMode + ")!", ex);
+                    }
+
+                    break;
+
+                case ENABLED:
+
+                    l.info("Device \"{}\" is {}, forcing it (case {})!", devName, current.getStatus(), desiredOpMode);
+                    desiredSetup(true);
+                    break;
+
+                case OPERATE_IF_ON:
+
+                    if (current.getStatus() == Status.ON) {
+
+                        l.info("Device \"{}\" is {}, managing it (case {})...", devName, current.getStatus(), desiredOpMode);
+                        desiredSetup(false);
+
+                    } else {
+
+                        l.info("Device \"{}\" is {} so do not touching it (case {})...", devName, current.getStatus(), desiredOpMode);
+                    }
+
+                    break;
+
+                case OPERATE_IF_ON_OR_SELF_OFF:
+
+                    boolean shouldOperate = false;
+
+                    if (current.getStatus() == Status.ON) {
+
+                        l.info("Device \"{}\" is {}, managing it (case {})!", devName, current.getStatus(), desiredOpMode);
+                        shouldOperate = true;
+
+                    } else {
+
+                        final Map.Entry<LocalDateTime, HVACStatus> hs = hssPost.get(devName).lastEntry();
+
+                        if (hs == null) {
+
+                            l.warn("Unable to find last status for device \"{}\" and now it is {}, do not touching it (case {})...", devName, current.getStatus(), desiredOpMode);
+
+                        } else {
+
+                            // Check last recorded value date & time
+                            final LocalDateTime lowerBound = normalizedNow.minusMinutes(15);
+
+                            if (lowerBound.compareTo(hs.getKey()) > 0) {
+
+                                l.warn("Last status for device \"{}\" is more than 15 minutes old and now it is {}, do not touching it (case {})...", devName, current.getStatus(), desiredOpMode);
+
+                            } else if (hs.getValue().getStatusEnum() == current.getStatus()) {
+
+                                l.info("Last status for device \"{}\" was {} and now it is {}, managing it (case {})!", devName, hs.getValue().getStatusEnum(), current.getStatus(), desiredOpMode);
+                                shouldOperate = true;
+
+                            } else {
+
+                                l.info("Last status for device \"{}\" was {} and now it is {}, do not touching it (case {})...", devName, hs.getValue().getStatusEnum(), current.getStatus(), desiredOpMode);
+                            }
+                        }
+                    }
+
+                    if (shouldOperate) {
+
+                        desiredSetup(false);
+                    }
+
+                    break;
+
+                case OPERATE_AUTO:
+
+                    l.info("Device \"{}\" is {}, managing it (case {})!", devName, current.getStatus(), desiredOpMode);
+                    desiredSetup(false);
+                    break;
+
+                default:
+
+                    l.debug("Device \"{}\" has an unexpected operation mode (i.e. {}) !", devName, desiredOpMode);
+                    break;
+            }
+
+            cam.disconnect();
+        }
+
+        // TODO: cycle again on devices to check if what we want is actually running
+    }
+
+    private static CoolAutomation desiredSetup(boolean forceOn) {
+
+        // XXX: forceOn = true means that even if we believe that device should be turned off we keep it going
+        l.debug("TODO: I'm here");
+        return null;
     }
 
     private static void shutdownProgram(Config cfg) {
@@ -92,42 +326,44 @@ public class Operation {
         for (CoolAutomationDeviceConfig cadc
                 : cfg.getCoolAutomation().getDevices()) {
 
-            final String name = cadc.getName();
+            final String devName = cadc.getName();
 
             try {
 
                 // Check status of device
-                final CoolAutomationManager mgr;
-                final CoolAutomation preCa;
+                final CoolAutomationManager cam;
+                final CoolAutomation previous;
 
-                mgr = CoolAutomationManager.getInstance(cadc);
-                preCa = mgr.getDeviceData();
+                cam = CoolAutomationManager.getInstance(cadc);
+                previous = cam.getDeviceData();
 
-                if (preCa.getStatus() == CoolAutomation.Status.OFF) {
+                l.debug("Turning device \"" + devName + "\" off...");
 
-                    l.info("Device \"" + name + "\" already off...");
+                if (previous.getStatus() == Status.OFF) {
+
+                    l.info("Device \"" + devName + "\" already off...");
 
                 } else if (!Variant.LOG_ONLY.equals(cfg.getVariant())) {
 
-                    CoolAutomation postCa = mgr.setAll(preCa,
-                            preCa.getOpMode(), preCa.getFanSpeed(),
-                            CoolAutomation.Status.OFF, 0);
+                    CoolAutomation current = cam.setAll(previous,
+                            previous.getOpMode(), previous.getFanSpeed(),
+                            Status.OFF, 0);
 
-                    if (postCa != null) {
-                        l.info("Device \"" + name + "\" turned off.");
+                    if (current != null) {
+                        l.info("Device \"" + devName + "\" turned off.");
                     } else {
                         l.error("Something went wrong while turning off"
-                                + " device \"{}\"!", name);
+                                + " device \"{}\"!", devName);
                     }
 
                     // Shutdown usually is triggered and not scheduled
                     // so we do not add its data to database
                 }
 
-                mgr.disconnect();
+                cam.disconnect();
             } catch (Exception ex) {
 
-                l.error("A problem occurred while turning off device \"" + name + "\"!", ex);
+                l.error("A problem occurred while turning off device \"" + devName + "\"!", ex);
             }
         }
     }
@@ -139,17 +375,17 @@ public class Operation {
 
         try {
 
-            final SolarEdgeManager sm;
-            sm = SolarEdgeManager.getInstance(cfg.getSolarEdge());
+            final SolarEdgeManager sem;
+            sem = SolarEdgeManager.getInstance(cfg.getSolarEdge());
 
             if (start == null || end == null) {
 
-                energy = sm.getEnergyDetails(now);
+                energy = sem.getEnergyDetails(now);
                 l.debug("Collected values with ts "
                         + energy.getFirstTimestamp() + ".");
             } else {
 
-                energy = sm.getEnergyDetails(start, end);
+                energy = sem.getEnergyDetails(start, end);
 
                 final int tot = energy.getMeters().size();
                 l.debug("Collected " + tot + " value"

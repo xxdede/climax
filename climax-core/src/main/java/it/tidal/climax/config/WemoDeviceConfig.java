@@ -72,6 +72,7 @@ public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
         this.type = type;
     }
 
+    @Override
     public String getDbName() {
         return dbName;
     }

@@ -8,6 +8,7 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import it.tidal.climax.config.NetAtmoConfig;
+import it.tidal.climax.config.NetAtmoDeviceConfig;
 import it.tidal.climax.extensions.data.NetAtmo;
 import it.tidal.config.utils.Utility;
 import it.tidal.gson.GsonFactory;
@@ -19,6 +20,7 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,8 @@ public class NetAtmoManager {
     private String accessToken;
     private String refreshToken;
     private LocalDateTime expiration;
+
+    private transient HashMap<String, NetAtmo> cache = new HashMap<>();
 
     public NetAtmoManager(String accessToken, String refreshToken, int expirationSecs) {
 
@@ -118,7 +122,7 @@ public class NetAtmoManager {
         }
     }
 
-    public static NetAtmoManager getInstance(NetAtmoConfig cfg) {
+    public static NetAtmoManager getInstance(NetAtmoConfig cfg, boolean fillCache) {
 
         if (cfg == null) {
 
@@ -127,12 +131,13 @@ public class NetAtmoManager {
         }
 
         NetAtmoManager prev = readFromFile();
+        NetAtmoManager current = null;
 
         if (prev != null) {
 
             l.debug("Found previous NetAtmo credentials...");
             prev.checkAndRenew(cfg);
-            return prev;
+            current = prev;
         } else {
 
             l.debug("Asking new credentials to NetAtmo...");
@@ -151,20 +156,55 @@ public class NetAtmoManager {
 
                 JSONObject res = jsonResponse.getBody().getObject();
 
-                NetAtmoManager nm = new NetAtmoManager(
+                current = new NetAtmoManager(
                         res.getString("access_token"),
                         res.getString("refresh_token"),
                         res.getInt("expires_in"));
 
-                writeToFile(nm);
-                return nm;
+                writeToFile(current);
+
             } catch (UnirestException | JSONException ex) {
 
                 l.error("Error while asking new credentials to NetAtmo!");
             }
         }
 
-        return null;
+        if (current != null && fillCache) {
+
+            current.emptyCache();
+
+            List<String> wm = new ArrayList<>();
+            List<String> th = new ArrayList<>();
+
+            for (NetAtmoDeviceConfig nadc : cfg.getDevices()) {
+
+                switch (nadc.getType()) {
+
+                    case THERMOSTAT:
+                        th.add(nadc.getName());
+                        break;
+
+                    case WEATHER_INDOOR_MODULE:
+                    case WEATHER_OUTDOOR_MODULE:
+                    case WEATHER_STATION:
+                        wm.add(nadc.getName());
+                        break;
+                }
+            }
+
+            current.getStationsData(wm);
+            current.getThermostatsData(th);
+        }
+
+        return current;
+    }
+
+    private void emptyCache() {
+        this.cache.clear();
+    }
+
+    private void addToCache(HashMap<String, NetAtmo> elements) {
+        this.cache.putAll(elements);
     }
 
     public boolean checkAndRenew(NetAtmoConfig cfg) {
@@ -220,72 +260,6 @@ public class NetAtmoManager {
         }
 
         return (LocalDateTime.now().compareTo(expiration) >= 0);
-    }
-
-    public NetAtmo getStationData(String moduleName) {
-
-        if (moduleName == null) {
-
-            l.error("Cannot get NetAtmo station data without module name!");
-            return null;
-        }
-
-        JSONArray devs = null;
-
-        try {
-
-            HttpResponse<JsonNode> jsonResponse = Unirest.post(URL_STATION_DATA)
-                    .header("accept", "application/json")
-                    .field("access_token", accessToken)
-                    .asJson();
-
-            final JSONObject body = jsonResponse.getBody()
-                    .getObject()
-                    .getJSONObject("body");
-
-            devs = body.getJSONArray("devices");
-        } catch (UnirestException | JSONException ex) {
-
-            l.error(ex, "Problem while getting station data!");
-            return null;
-        }
-
-        for (int i = 0; i < devs.length(); i++) {
-
-            final JSONObject dev = devs.getJSONObject(i);
-            final String baseModuleName = dev.getString("module_name");
-
-            if (moduleName.equals(baseModuleName)) {
-
-                final JSONObject data = dev.getJSONObject("dashboard_data");
-
-                return new NetAtmo(moduleName,
-                        data.getDouble("Temperature"),
-                        data.getInt("Humidity"),
-                        (data.has("CO2") ? data.getInt("CO2") : null));
-            }
-
-            final JSONArray modules = dev.getJSONArray("modules");
-
-            for (int j = 0; j < modules.length(); j++) {
-
-                final JSONObject module = modules.getJSONObject(j);
-                final String tempModuleName = module.getString("module_name");
-
-                if (!moduleName.equals(tempModuleName)) {
-                    continue;
-                }
-
-                final JSONObject data = module.getJSONObject("dashboard_data");
-
-                return new NetAtmo(moduleName,
-                        data.getDouble("Temperature"),
-                        data.getInt("Humidity"),
-                        (data.has("CO2") ? data.getInt("CO2") : null));
-            }
-        }
-
-        return null;
     }
 
     public HashMap<String, NetAtmo> getStationsData(List<String> moduleNames) {
@@ -352,18 +326,20 @@ public class NetAtmoManager {
             }
         }
 
+        addToCache(rets);
         return rets;
     }
 
-    public NetAtmo getThermostatData(String moduleName) {
+    public HashMap<String, NetAtmo> getThermostatsData(List<String> moduleNames) {
 
-        if (moduleName == null) {
+        if (moduleNames == null || moduleNames.isEmpty()) {
 
-            l.error("Cannot get NetAtmo thermostat data without module name!");
+            l.error("Cannot get NetAtmo thermostat data without module names!");
             return null;
         }
 
         JSONArray devs = null;
+        HashMap<String, NetAtmo> rets = new HashMap<>(moduleNames.size());
 
         try {
 
@@ -386,19 +362,8 @@ public class NetAtmoManager {
         for (int i = 0; i < devs.length(); i++) {
 
             final JSONObject dev = devs.getJSONObject(i);
-            final String baseModuleName = dev.getString("station_name");
+            //final String baseModuleName = dev.getString("station_name");
 
-            /*
-            if (moduleName.equals(baseModuleName)) {
-
-                final JSONObject data = dev.getJSONObject("dashboard_data");
-
-                return new NetAtmo(moduleName,
-                        data.getDouble("Temperature"),
-                        data.getInt("Humidity"),
-                        (data.has("CO2") ? data.getInt("CO2") : null));
-            }
-             */
             final JSONArray modules = dev.getJSONArray("modules");
 
             for (int j = 0; j < modules.length(); j++) {
@@ -406,16 +371,31 @@ public class NetAtmoManager {
                 final JSONObject module = modules.getJSONObject(j);
                 final String tempModuleName = module.getString("module_name");
 
-                if (!moduleName.equals(tempModuleName)) {
+                if (!moduleNames.contains(tempModuleName)) {
                     continue;
                 }
 
                 final JSONObject data = module.getJSONObject("measured");
-                return new NetAtmo(moduleName, data.getDouble("temperature"));
+
+                rets.put(tempModuleName,
+                        new NetAtmo(tempModuleName, data.getDouble("temperature")));
             }
         }
 
-        return null;
+        addToCache(rets);
+        return rets;
+    }
+
+    public NetAtmo getData(String moduleName) {
+
+        final NetAtmo na = this.cache.get(moduleName);
+
+        if (na == null) {
+
+            l.warn("Cannot find \"{}\" data in NetAtmo cache (current values: {})!", moduleName, GsonFactory.instance().toJson(this.cache.keySet()));
+        }
+
+        return na;
     }
 
     public String getAccessToken() {

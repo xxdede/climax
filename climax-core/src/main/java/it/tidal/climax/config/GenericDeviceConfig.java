@@ -30,6 +30,11 @@ public class GenericDeviceConfig implements Serializable {
         public String getSlug() {
             return Utility.slugFromAnnotation(this);
         }
+
+        @Override
+        public String toString() {
+            return getSlug();
+        }
     }
 
     public enum Role {

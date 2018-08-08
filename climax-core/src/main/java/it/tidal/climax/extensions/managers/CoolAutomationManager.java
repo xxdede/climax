@@ -111,7 +111,7 @@ public class CoolAutomationManager {
             out.write((cmd + "\r\n").getBytes());
             out.flush();
 
-            l.debug("Sent '{}'", cmd);
+            //l.debug("Sent '{}'", cmd);
             return true;
         } catch (IOException ex) {
 
@@ -163,7 +163,7 @@ public class CoolAutomationManager {
             if (receivedString.length() > 0) {
 
                 final String ret = receivedString.toString();
-                l.trace("Received '{}'", ret);
+                //l.trace("Received '{}'", ret);
                 return ret;
             } else {
 

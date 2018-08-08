@@ -1,5 +1,6 @@
 package it.tidal.climax.extensions.data;
 
+import it.tidal.climax.database.mapping.RoomStatus;
 import java.io.Serializable;
 
 /**
@@ -62,5 +63,10 @@ public class NetAtmo implements Serializable {
 
     public void setCo2(Integer co2) {
         this.co2 = co2;
+    }
+
+    public RoomStatus toRoomStatus(long ts) {
+
+        return new RoomStatus(name, ts, temperature, humidity, co2, temperature, null);
     }
 }

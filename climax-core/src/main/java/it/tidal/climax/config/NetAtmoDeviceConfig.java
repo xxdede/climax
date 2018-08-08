@@ -58,6 +58,7 @@ public class NetAtmoDeviceConfig implements Serializable, DeviceFamiliable {
         this.type = type;
     }
 
+    @Override
     public String getDbName() {
         return dbName;
     }

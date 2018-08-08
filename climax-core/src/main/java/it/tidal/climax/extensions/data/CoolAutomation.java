@@ -243,11 +243,13 @@ public class CoolAutomation implements Serializable {
             this.failCode = tokens[6];
         }
 
+        /*
         l.debug("{}: {}, {}, {}, {}, {}.",
                 this.name,
                 this.status, this.setTemperature,
                 this.roomTemperature, this.fanSpeed,
                 this.opMode, this.failCode);
+         */
     }
 
     public static double parseCelsius(String temperature) {
