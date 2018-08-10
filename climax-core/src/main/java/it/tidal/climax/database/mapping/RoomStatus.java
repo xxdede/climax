@@ -97,13 +97,17 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
         this.temperature = temperature;
         this.humidity = humidity;
         this.co2 = co2;
-        this.perceived = perceived;
+
+        if (perceived != null) {
+            this.perceived = perceived;
+        } else if (this.humidity != null) {
+            this.perceived = Illness.computeHumidexValue(this.temperature, this.humidity);
+        }
 
         if (illness != null) {
             this.illness = illness.getValue();
-        } else if (humidity != null) {
-
-            this.illness = Illness.compute(temperature, humidity).getValue();
+        } else if (this.perceived != null) {
+            this.illness = Illness.compute(this.perceived).getValue();
         }
     }
 

@@ -12,6 +12,8 @@ public class ClimaxPack implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private String name;
+
     private HVACStatus lastHVACStatus;
 
     private ArrayList<Double> roomTemperatures;
@@ -25,6 +27,18 @@ public class ClimaxPack implements Serializable {
     private CoolAutomation desiredHVACConfig;
 
     public ClimaxPack() {
+    }
+
+    public ClimaxPack(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public HVACStatus getLastHVACStatus() {

@@ -1,5 +1,6 @@
 package it.tidal.climax.extensions.data;
 
+import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 import java.io.Serializable;
 
@@ -252,6 +253,22 @@ public class CoolAutomation implements Serializable {
          */
     }
 
+    public CoolAutomation duplicate() {
+
+        CoolAutomation ca = new CoolAutomation();
+
+        ca.name = this.name;
+        ca.lineId = this.lineId;
+        ca.status = this.status;
+        ca.setTemperature = this.setTemperature;
+        ca.roomTemperature = this.roomTemperature;
+        ca.fanSpeed = this.fanSpeed;
+        ca.opMode = this.opMode;
+        ca.failCode = this.failCode;
+
+        return ca;
+    }
+
     public static double parseCelsius(String temperature) {
 
         if (temperature == null || temperature.isEmpty()) {
@@ -329,5 +346,61 @@ public class CoolAutomation implements Serializable {
 
     public void setFailCode(String failCode) {
         this.failCode = failCode;
+    }
+
+    public String getDescription() {
+
+        return "\"" + name + "\""
+                + " status: " + status
+                + ", mode: " + opMode
+                + ", set: " + Utility.americanDoubleFormatter
+                        .format(setTemperature) + "°"
+                + ", fan: " + fanSpeed;
+    }
+
+    // Fluent setters
+    public CoolAutomation changeName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public CoolAutomation changeLineId(String lineId) {
+        this.lineId = lineId;
+        return this;
+    }
+
+    public CoolAutomation changeStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
+    public CoolAutomation changeSetTemperature(double setTemperature) {
+        this.setTemperature = setTemperature;
+        return this;
+    }
+
+    public CoolAutomation changeRoomTemperature(double roomTemperature) {
+        this.roomTemperature = roomTemperature;
+        return this;
+    }
+
+    public CoolAutomation changeFanSpeed(FanSpeed fanSpeed) {
+        this.fanSpeed = fanSpeed;
+        return this;
+    }
+
+    public CoolAutomation changeOpMode(OpMode opMode) {
+        this.opMode = opMode;
+        return this;
+    }
+
+    public CoolAutomation changeFailCode(String failCode) {
+        this.failCode = failCode;
+        return this;
+    }
+
+    public CoolAutomation changeDelta(double delta) {
+        this.setTemperature = this.roomTemperature + delta;
+        return this;
     }
 }

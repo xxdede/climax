@@ -67,6 +67,6 @@ public class NetAtmo implements Serializable {
 
     public RoomStatus toRoomStatus(long ts) {
 
-        return new RoomStatus(name, ts, temperature, humidity, co2, temperature, null);
+        return new RoomStatus(name, ts, temperature, humidity, co2, null, null);
     }
 }
