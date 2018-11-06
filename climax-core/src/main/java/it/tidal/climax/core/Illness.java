@@ -252,7 +252,7 @@ public class Illness implements Serializable {
         int t, h;
 
         if (temperature < 18) {
-            t = 0;
+            return temperature;
         } else if (temperature > 42) {
             t = 24;
         } else {
