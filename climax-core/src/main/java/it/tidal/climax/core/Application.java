@@ -48,8 +48,8 @@ public class Application {
 
         if (!cfg.isLatestVersion()) {
 
-            l.error("Config version mismatch found: {}, latest: {}."
-                    + cfg.getVersion(), Config.getLatestVersion());
+            l.error("Config version mismatch found: {}, latest: {}.",
+                    cfg.getVersion(), Config.getLatestVersion());
             return;
         }
 

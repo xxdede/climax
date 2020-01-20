@@ -104,11 +104,13 @@ public class Operation {
         final HashMap<String, ClimaxPack> cps = new HashMap<>();
 
         // Energy statuses
+        l.debug("Retrieving energy status...");
         TreeMap<LocalDateTime, EnergyStatus> ess;
         ess = dbm.splitQuarterOfHourToTenMinutesEnergyStatuses(
                 dbm.retrieveLastEnergyStatus(4));
 
         // HVAC statuses (pre: before last exec, post: after last exec)
+        l.debug("Retrieving hvac status...");
         HashMap<String, TreeMap<LocalDateTime, HVACStatus>> hssPre;
         HashMap<String, TreeMap<LocalDateTime, HVACStatus>> hssPost;
 
@@ -116,6 +118,7 @@ public class Operation {
         hssPost = new HashMap<>(cfg.getCoolAutomation().getDevices().size());
 
         // NetAtmo manager
+        l.debug("Retrieving thermo status...");
         NetAtmoManager nam = NetAtmoManager.getInstance(cfg.getNetAtmo(), true);
 
         for (CoolAutomationDeviceConfig cadc

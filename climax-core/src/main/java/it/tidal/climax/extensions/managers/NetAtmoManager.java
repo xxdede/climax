@@ -273,6 +273,8 @@ public class NetAtmoManager {
         JSONArray devs = null;
         HashMap<String, NetAtmo> rets = new HashMap<>(moduleNames.size());
 
+        l.debug("Asking station data to NetAtmo...");
+
         try {
 
             HttpResponse<JsonNode> jsonResponse = Unirest.post(URL_STATION_DATA)
@@ -340,6 +342,8 @@ public class NetAtmoManager {
 
         JSONArray devs = null;
         HashMap<String, NetAtmo> rets = new HashMap<>(moduleNames.size());
+
+        l.debug("Asking thermostat data to NetAtmo...");
 
         try {
 
