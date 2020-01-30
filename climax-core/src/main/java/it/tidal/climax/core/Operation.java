@@ -23,6 +23,8 @@ import it.tidal.climax.extensions.managers.SolarEdgeManager;
 import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +39,9 @@ public class Operation {
         @SerializedName("shutdown")
         SHUTDOWN(1),
         @SerializedName("only-solaredge")
-        ONLY_SOLAREDGE(2);
+        ONLY_SOLAREDGE(2),
+        @SerializedName("co2")
+        CO2(3);
 
         private final int v;
 
@@ -73,6 +77,9 @@ public class Operation {
                 break;
             case SHUTDOWN:
                 shutdownProgram(cfg);
+                break;
+            case CO2:
+                co2Program(cfg, now);
                 break;
             case ONLY_SOLAREDGE: {
 
@@ -496,6 +503,100 @@ public class Operation {
         } catch (Exception ex) {
 
             l.error("An error occurred while saving to DB!", ex);
+        }
+    }
+
+    private static void co2Program(Config cfg, LocalDateTime now) {
+
+        final DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
+
+        // Dispositivi coinvolti
+        final String sourceDeviceName = "camera";
+        final String destinationDeviceName = "Piano 1";
+
+        final Integer upperBound = 1300;
+        final Integer lowerBound = 950;
+
+        // Controllo nel database l'ultimo valore
+        final TreeMap<LocalDateTime, RoomStatus> tempRss;
+        tempRss = dbm.retrieveLastRoomStatus(sourceDeviceName, 1);
+
+        if (tempRss == null || tempRss.size() < 1) {
+
+            l.error("Cannot find source device status (name: {})!", sourceDeviceName);
+            return;
+        }
+
+        final LocalDateTime time = tempRss.firstKey();
+        final Duration elapsed = Duration.between(time, now);
+
+        // Se è passata più di mezz'ora non va bene...
+        if (elapsed.toMinutes() > 30) {
+
+            l.error("Last room status is {} minutes old, bailing out!", elapsed.toMinutes());
+            return;
+        }
+
+        final RoomStatus roomStatus = tempRss.get(time);
+        boolean shouldBeActivated = false;
+        boolean shouldBeDeactivated = false;
+
+        if (roomStatus.getCo2() > upperBound)
+            shouldBeActivated = true;
+        else if (roomStatus.getCo2() < lowerBound)
+            shouldBeDeactivated = true;
+        else {
+
+            l.info("Leaving everything as is (co2 is {}ppm)...", roomStatus.getCo2());
+            return;
+        }
+
+
+        final CoolAutomationManager cam = CoolAutomationManager.getInstance(cfg.getCoolAutomation().find(destinationDeviceName));
+
+        if (cam == null) {
+
+            l.error("Cannot find destination device {}!", destinationDeviceName);
+            return;
+        }
+
+        final CoolAutomation current = cam.getDeviceData();
+
+        if (current == null) {
+
+            l.error("Cannot find destination device status {}!", destinationDeviceName);
+            return;
+        }
+
+        CoolAutomation desired = null;
+
+        if (current.getStatus() == Status.ON && shouldBeDeactivated) {
+
+            desired = current.duplicate().changeStatus(Status.OFF);
+        }
+        else if ((current.getStatus() == Status.OFF && shouldBeActivated) || current.getOpMode() != OpMode.FAN) {
+
+            desired = current.duplicate()
+                    .changeStatus(Status.ON)
+                    .changeFanSpeed(FanSpeed.LOW)
+                    .changeOpMode(OpMode.FAN);
+        }
+
+        if (desired != null) {
+
+            try {  Thread.sleep(2000); } catch (Exception ex) {}
+
+            cam.setAll(current,
+                    desired.getOpMode(),
+                    desired.getFanSpeed(),
+                    desired.getStatus(),
+                    0);
+
+            l.info("Change hvac, set it to {} (co2: {}ppm)!", desired.getStatus(), roomStatus.getCo2());
+        }
+        else {
+
+            l.info("Nothing to do, hvac is already ok as is ({}, co2: {}ppm)!", current.getStatus(), roomStatus.getCo2());
         }
     }
 }
