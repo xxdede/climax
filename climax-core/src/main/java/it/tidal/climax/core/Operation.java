@@ -568,6 +568,12 @@ public class Operation {
             return;
         }
 
+        if (current.getStatus() == Status.ON && current.getOpMode() != OpMode.FAN) {
+
+            l.info("HVAC is in {} mode, probably set manually... leaving it as is!", current.getOpMode());
+            return;
+        }
+
         CoolAutomation desired = null;
 
         if (current.getStatus() == Status.ON && shouldBeDeactivated) {

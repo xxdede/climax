@@ -18,7 +18,7 @@ public class Application {
     private static Log l = Log.prepare(Application.class.getSimpleName());
 
     public static final String TMP_CONFIG_PATH = "/tmp/climax.conf";
-    public static final String APPLICATION_BUILD = "2020-01-20";
+    public static final String APPLICATION_BUILD = "2020-03-07";
 
     public static final LocalDateTime NOW = LocalDateTime.now();
 
@@ -74,12 +74,12 @@ public class Application {
 
         if (prg == null) {
 
-            l.error("Unkwnowm program... bailing out!");
+            l.error("Unkwnown program... bailing out!");
             return;
         } else {
 
-            l.info("Climax {} started with program '{}'...",
-                    cfg.getVersion(), prg.getSlug());
+            l.info("Climax {} ({}) started with program '{}'...",
+                    cfg.getVersion(), APPLICATION_BUILD, prg.getSlug());
         }
 
         Operation.execute(args, prg, cfg, NOW);
