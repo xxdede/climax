@@ -13,6 +13,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Locale;
 
 /**
@@ -169,5 +171,25 @@ public class Utility {
 
     public static String americanDouble(Double d) {
         return americanDoubleFormatter.format(d);
+    }
+
+    public static String writeCommaSeparated(Collection<? extends Object> elements) {
+
+        final Iterator<? extends Object> it = elements.iterator();
+        final StringBuilder sb = new StringBuilder();
+
+        while (it.hasNext()) {
+
+            if (sb.length() == 0) {
+                sb.append("(");
+            }
+
+            sb.append("\"")
+                    .append(it.next().toString())
+                    .append("\"")
+                    .append(it.hasNext() ? "," : ")");
+        }
+
+        return sb.toString();
     }
 }
