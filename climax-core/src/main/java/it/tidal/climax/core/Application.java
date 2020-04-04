@@ -3,9 +3,11 @@ package it.tidal.climax.core;
 import it.tidal.climax.config.Config;
 import it.tidal.climax.core.Operation.Program;
 import it.tidal.climax.extensions.managers.ConfigManager;
+import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 import java.io.File;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 /**
  * Entry point. This class contains the main method and it is used to start
@@ -78,8 +80,18 @@ public class Application {
             return;
         } else {
 
-            l.info("Climax {} ({}) started with program '{}'...",
-                    cfg.getVersion(), APPLICATION_BUILD, prg.getSlug());
+            if (args.length > 2) {
+
+                String argsAsString = Utility.writeCommaSeparated(Arrays.asList(args));
+
+                l.info("Climax {} ({}) started with args {}...",
+                        cfg.getVersion(), APPLICATION_BUILD, argsAsString);
+            }
+            else {
+
+                l.info("Climax {} ({}) started with program '{}'...",
+                        cfg.getVersion(), APPLICATION_BUILD, prg.getSlug());
+            }
         }
 
         Operation.execute(args, prg, cfg, NOW);

@@ -78,9 +78,21 @@ public class Operation {
             case SHUTDOWN:
                 shutdownProgram(cfg);
                 break;
-            case CO2:
-                co2Program(cfg, now);
+            case CO2: {
+
+                Integer upperBound = null;
+                Integer lowerBound = null;
+
+                try {
+
+                    upperBound = Integer.parseInt(args[2]);
+                    lowerBound = Integer.parseInt(args[3]);
+                }
+                catch(Exception ex) {}
+
+                co2Program(cfg, now, lowerBound, upperBound);
                 break;
+            }
             case ONLY_SOLAREDGE: {
 
                 Long start = null;
@@ -506,7 +518,7 @@ public class Operation {
         }
     }
 
-    private static void co2Program(Config cfg, LocalDateTime now) {
+    private static void co2Program(Config cfg, LocalDateTime now, Integer lowerBound, Integer upperBound) {
 
         final DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
 
@@ -514,8 +526,13 @@ public class Operation {
         final String sourceDeviceName = "camera";
         final String destinationDeviceName = "Piano 1";
 
-        final Integer upperBound = 1300;
-        final Integer lowerBound = 950;
+        if (lowerBound == null)
+            lowerBound = 950;
+        if (upperBound == null)
+            upperBound = 1300;
+
+        if (lowerBound >= upperBound)
+            lowerBound = upperBound - 150;
 
         // Controllo nel database l'ultimo valore
         final TreeMap<LocalDateTime, RoomStatus> tempRss;
