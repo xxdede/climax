@@ -80,13 +80,13 @@ public class Operation {
                 break;
             case CO2: {
 
-                Integer upperBound = null;
                 Integer lowerBound = null;
+                Integer upperBound = null;
 
                 try {
 
-                    upperBound = Integer.parseInt(args[2]);
-                    lowerBound = Integer.parseInt(args[3]);
+                    lowerBound = Integer.parseInt(args[2]);
+                    upperBound = Integer.parseInt(args[3]);
                 }
                 catch(Exception ex) {}
 
@@ -564,7 +564,7 @@ public class Operation {
             shouldBeDeactivated = true;
         else {
 
-            l.info("Leaving everything as is (co2 is {}ppm)...", roomStatus.getCo2());
+            l.info("Leaving everything as is (co2: {}ppm, lo: {}ppm, hi: {}ppm)...", roomStatus.getCo2(), lowerBound, upperBound);
             return;
         }
 
@@ -615,11 +615,11 @@ public class Operation {
                     desired.getStatus(),
                     0);
 
-            l.info("Change hvac, set it to {} (co2: {}ppm)!", desired.getStatus(), roomStatus.getCo2());
+            l.info("Change hvac, set it to {} (co2: {}ppm, lo: {}ppm, hi: {}ppm)!", desired.getStatus(), roomStatus.getCo2(), lowerBound, upperBound);
         }
         else {
 
-            l.info("Nothing to do, hvac is already ok as is ({}, co2: {}ppm)!", current.getStatus(), roomStatus.getCo2());
+            l.info("Nothing to do, hvac is already ok as is ({}, co2: {}ppm, lo: {}ppm, hi: {}ppm)!", current.getStatus(), roomStatus.getCo2(), lowerBound, upperBound);
         }
     }
 }
