@@ -14,3 +14,4 @@ Thumbs\.db
 # Configuration files
 /files/*\.conf
 /climax-gui/target/
+climax-core/.idea/
