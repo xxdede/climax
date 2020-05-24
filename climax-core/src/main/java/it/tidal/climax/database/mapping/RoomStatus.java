@@ -6,12 +6,15 @@
 package it.tidal.climax.database.mapping;
 
 import it.tidal.climax.core.Illness;
+import it.tidal.config.utils.AdvancedTemperatureSensor;
+import it.tidal.config.utils.Co2Queryable;
+import it.tidal.config.utils.PerceivedQueryable;
 import it.tidal.config.utils.Utility;
 import java.io.Serializable;
 import net.sf.persist.annotations.Column;
 import net.sf.persist.annotations.NoColumn;
 
-public class RoomStatus implements Serializable {
+public class RoomStatus extends AdvancedTemperatureSensor {
 
     private static final long serialVersionUID = 1L;
 
@@ -81,8 +84,6 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
     double temperature;
     Integer humidity;
     Integer co2;
-    Double perceived;
-    Integer illness;
 
     public RoomStatus() {
     }
@@ -158,22 +159,6 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
 
     public void setCo2(Integer co2) {
         this.co2 = co2;
-    }
-
-    public Double getPerceived() {
-        return perceived;
-    }
-
-    public void setPerceived(Double perceived) {
-        this.perceived = perceived;
-    }
-
-    public Integer getIllness() {
-        return illness;
-    }
-
-    public void setIllness(Integer illness) {
-        this.illness = illness;
     }
 
     @NoColumn

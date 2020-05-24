@@ -1,5 +1,6 @@
 package it.tidal.climax.extensions.managers;
 
+import it.tidal.climax.config.WemoDeviceConfig;
 import it.tidal.logging.Log;
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -47,6 +48,11 @@ public class WemoManager {
     public WemoManager(WemoDevice device, String host) {
 
         this(device, host, 49153);
+    }
+
+    public WemoManager(WemoDeviceConfig config) {
+
+        this(config.getType().getWemoDevice(), config.getIpAddress(), config.getPort());
     }
 
     /**

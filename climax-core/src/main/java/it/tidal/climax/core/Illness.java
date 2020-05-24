@@ -13,6 +13,11 @@ public class Illness implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    // Illness motivation
+    public static String ALL_OK = "all_ok";
+    public static String LOWER_TEMPERATURE_NEEDED = "lower_temperature";
+    public static String LOWER_CO2_NEEDED = "lower_co2";
+
     public enum Level {
 
         NONE(0),

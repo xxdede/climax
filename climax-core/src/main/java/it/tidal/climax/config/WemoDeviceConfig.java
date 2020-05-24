@@ -1,6 +1,7 @@
 package it.tidal.climax.config;
 
 import com.google.gson.annotations.SerializedName;
+import it.tidal.climax.extensions.managers.WemoManager;
 import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.DeviceFamily;
 import it.tidal.config.utils.Utility;
@@ -19,6 +20,16 @@ public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
 
         private Type(int v) {
             this.v = v;
+        }
+
+        public WemoManager.WemoDevice getWemoDevice() {
+
+            switch (v) {
+
+                case 0: return WemoManager.WemoDevice.SWITCH;
+                case 1: return WemoManager.WemoDevice.INSIGHT;
+                default: throw new RuntimeException("Unknown Wemo Device");
+            }
         }
 
         public String getSlug() {

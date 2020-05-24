@@ -56,19 +56,13 @@ public class ConfigManager {
         return null;
     }
 
-    public static GenericDeviceConfig.OperationMode suitableOperationMode(Config cfg, String deviceName, LocalDateTime now) {
+    public static GenericDeviceConfig.OperationMode suitableOperationMode(ProgramConfig programConfig, String deviceName, LocalDateTime now) {
 
-        if (deviceName == null || cfg == null) {
+        if (programConfig == null) {
             return GenericDeviceConfig.OperationMode.NOT_SPECIFIED;
         }
 
-        final ProgramConfig pc = suitableProgramConfig(cfg.getPrograms(), now);
-
-        if (pc == null) {
-            return GenericDeviceConfig.OperationMode.NOT_SPECIFIED;
-        }
-
-        return suitableDeviceConfig(pc, deviceName, now, now.minusDays(7));
+        return suitableDeviceConfig(programConfig, deviceName, now, now.minusDays(7));
     }
 
     private static GenericDeviceConfig.OperationMode suitableDeviceConfig(ProgramConfig programConfig, String deviceName, LocalDateTime now, LocalDateTime safeGuard) {
@@ -111,7 +105,7 @@ public class ConfigManager {
         return GenericDeviceConfig.OperationMode.NOT_SPECIFIED;
     }
 
-    private static ProgramConfig suitableProgramConfig(List<ProgramConfig> cfgs, LocalDateTime now) {
+    public static ProgramConfig suitableProgramConfig(List<ProgramConfig> cfgs, LocalDateTime now) {
 
         if (cfgs == null) {
             return null;
@@ -125,7 +119,7 @@ public class ConfigManager {
 
         for (ProgramConfig cfg : cfgs) {
 
-            if (!cfg.isActive()) {
+            if (!cfg.isValid() || !cfg.isActive()) {
                 continue;
             }
 
@@ -151,6 +145,7 @@ public class ConfigManager {
             }
         }
 
+        // Found the best candidate (matching day/time and with highest priority)
         return candidate;
     }
 

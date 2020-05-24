@@ -34,7 +34,7 @@ public class Config implements Serializable {
 
     final static int LAST_MAJ_NUMBER = 0;
     final static int LAST_MIN_NUMBER = 3;
-    final static int LAST_REV_NUMBER = 0;
+    final static int LAST_REV_NUMBER = 1;
 
     private int majNumber;
     private int minNumber;

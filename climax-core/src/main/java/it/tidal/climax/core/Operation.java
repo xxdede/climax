@@ -1,10 +1,8 @@
 package it.tidal.climax.core;
 
 import com.google.gson.annotations.SerializedName;
-import it.tidal.climax.config.Config;
+import it.tidal.climax.config.*;
 import it.tidal.climax.config.Config.Variant;
-import it.tidal.climax.config.CoolAutomationDeviceConfig;
-import it.tidal.climax.config.GenericDeviceConfig;
 import it.tidal.climax.config.GenericDeviceConfig.OperationMode;
 import it.tidal.climax.database.mapping.EnergyStatus;
 import it.tidal.climax.database.mapping.HVACStatus;
@@ -14,15 +12,15 @@ import it.tidal.climax.extensions.data.CoolAutomation;
 import it.tidal.climax.extensions.data.CoolAutomation.FanSpeed;
 import it.tidal.climax.extensions.data.CoolAutomation.OpMode;
 import it.tidal.climax.extensions.data.CoolAutomation.Status;
+import it.tidal.climax.extensions.data.NetAtmo;
 import it.tidal.climax.extensions.data.SolarEdgeEnergy;
-import it.tidal.climax.extensions.managers.ConfigManager;
-import it.tidal.climax.extensions.managers.CoolAutomationManager;
-import it.tidal.climax.extensions.managers.DatabaseManager;
-import it.tidal.climax.extensions.managers.NetAtmoManager;
-import it.tidal.climax.extensions.managers.SolarEdgeManager;
-import it.tidal.config.utils.DeviceFamiliable;
-import it.tidal.config.utils.Utility;
+import it.tidal.climax.extensions.managers.*;
+import it.tidal.config.utils.*;
 import it.tidal.logging.Log;
+import org.javatuples.Pair;
+import org.javatuples.Quartet;
+import org.javatuples.Quintet;
+import org.javatuples.Triplet;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -79,6 +77,9 @@ public class Operation {
                 shutdownProgram(cfg);
                 break;
             case CO2: {
+
+                // This program is obsolete, use "DEFAULT" properly set
+                l.warn("Program \"{}\" is obsolete, use \"{}\" properly set...", Program.CO2, Program.DEFAULT);
 
                 Integer lowerBound = null;
                 Integer upperBound = null;
@@ -201,7 +202,39 @@ public class Operation {
             if (ktp != null) {
 
                 // Update climax pack
-                cp.setIntakeStatus(nam.getData(ktp.getName()).toRoomStatus(normalizedNowTs));
+                GenericIntakeDetector gid = cp.getIntakeDetector();
+
+                if (gid == null) {
+
+                    gid = new GenericIntakeDetector(cadc.getName() + "_detector");
+                    cp.setIntakeDetector(gid);
+                }
+
+                if (ktp.getDeviceFamily() == DeviceFamily.NETATMO)
+                    gid.mergeDataFromAdvancedTemperatureSensor(nam.getData(ktp.getName()).toRoomStatus(normalizedNowTs), ktp.getName());
+            }
+
+            // Intake detectors & actuators (now checking only actuator)
+            final DeviceFamiliable atp = ConfigManager.findDevice(cfg, cadc.findRelated(GenericDeviceConfig.Role.INTAKE_ACTUATOR));
+
+            if (atp != null) {
+
+                // Update climax pack
+                GenericIntakeDetector gid = cp.getIntakeDetector();
+
+                if (gid == null) {
+
+                    gid = new GenericIntakeDetector(cadc.getName() + "_detector");
+                    cp.setIntakeDetector(gid);
+                }
+
+                if (atp instanceof WemoDeviceConfig) {
+
+                    final WemoManager wm = new WemoManager((WemoDeviceConfig) atp);
+                    // XXX: I don't use gid.mergeDataFromOpenClosedQueryable() for this simple query
+                    gid.setOpen(wm.getBinaryState() == 1);
+                    gid.setDetectorName(atp.getName());
+                }
             }
         }
 
@@ -209,16 +242,24 @@ public class Operation {
             // TODO: check consumption and define how many device we can turn on
         }
 
-        // Cycling again through device to decide what to do
+        // Selecting program to execute between candidates
+        final ProgramConfig programConfig = ConfigManager.suitableProgramConfig(cfg.getPrograms(), now);
+
+        // Map with deviceName -> coolAutomationDevice, currentConfig, desiredConfig, climaxPack, Illness motivation
+        final HashMap<String, Quintet<CoolAutomationDeviceConfig, CoolAutomation, CoolAutomation, ClimaxPack, String>> environment = new HashMap<>();
+
+        // Cycling (again) through device to decide what to do
         for (CoolAutomationDeviceConfig cadc
                 : cfg.getCoolAutomation().getDevices()) {
 
             final String devName = cadc.getName();
             final CoolAutomationManager cam = CoolAutomationManager.getInstance(cadc);
-            final OperationMode desiredOpMode = ConfigManager.suitableOperationMode(cfg, devName, normalizedNow);
+            final OperationMode desiredOpMode = ConfigManager.suitableOperationMode(programConfig, devName, normalizedNow);
 
             final ClimaxPack cp = cps.get(devName);
             final CoolAutomation current = cp.getCurrentHVACConfig();
+
+            Pair<CoolAutomation, String> result = null;
             CoolAutomation desired = null;
 
             switch (desiredOpMode) {
@@ -241,7 +282,9 @@ public class Operation {
                 case ENABLED:
 
                     l.info("Device \"{}\" is {}, forcing it (case {})!", devName, current.getStatus(), desiredOpMode);
-                    desired = desiredSetup(true, cp);
+                    result = desiredSetup(true, cp, programConfig);
+                    desired = result.getValue0();
+
                     break;
 
                 case OPERATE_IF_ON:
@@ -249,7 +292,8 @@ public class Operation {
                     if (current.getStatus() == Status.ON) {
 
                         l.info("Device \"{}\" is {}, managing it (case {})...", devName, current.getStatus(), desiredOpMode);
-                        desired = desiredSetup(false, cp);
+                        result = desiredSetup(false, cp, programConfig);
+                        desired = result.getValue0();
 
                     } else {
 
@@ -298,7 +342,8 @@ public class Operation {
 
                     if (shouldOperate) {
 
-                        desired = desiredSetup(false, cp);
+                        result = desiredSetup(false, cp, programConfig);
+                        desired = result.getValue0();
                     }
 
                     break;
@@ -306,7 +351,8 @@ public class Operation {
                 case OPERATE_AUTO:
 
                     l.info("Device \"{}\" is {}, managing it (case {})!", devName, current.getStatus(), desiredOpMode);
-                    desired = desiredSetup(false, cp);
+                    result = desiredSetup(false, cp, programConfig);
+                    desired = result.getValue0();
                     break;
 
                 default:
@@ -317,94 +363,169 @@ public class Operation {
 
             cam.disconnect();
 
-            // DEBUG: printing dedired
+            // Store results
+            environment.put(devName, new Quintet<>(cadc, current, desired, cp, result.getValue1()));
+
             l.debug("Desired: " + (desired != null ? desired.getDescription() : current.getDescription() + " (no changes)") + ".");
         }
 
-        // TODO: cycle again on devices to check if what we want is actually running
+        // DEBUG: printing data
+        l.json(environment, true);
+
+        // TODO: decide which one to activate (if more than one) cycle again and operate
     }
 
-    private static CoolAutomation desiredSetup(boolean forceOn, ClimaxPack cp) {
+    private static Pair<CoolAutomation, String> desiredSetup(boolean forceOn, ClimaxPack cp, ProgramConfig programConfig) {
 
         final CoolAutomation current = cp.getCurrentHVACConfig();
+
         CoolAutomation desired = null;
+        String motivation = null;
 
-        final RoomStatus rs = cp.getRoomStatus();
+        final AdvancedTemperatureSensor rs = cp.getRoomStatus();
 
-        l.debug("Perceived temperature {} for \"{}\"",
-                Utility.americanDoubleFormatter.format(rs.getPerceived()),
-                cp.getName());
+        final double perceivedTemperature = rs.getPerceived();
+        final double minPerceivedTemperature = programConfig.getMinPerceivedTemperature();
+        final double maxPerceivedTemperature = programConfig.getMaxPerceivedTemperature();
 
-        final double perceived = rs.getPerceived();
-        final double targetPerceived = 33.0;
-        final double deltaPerceived = perceived - targetPerceived;
+        l.debug("\"{}\" perceived temperature {} (threshold {}/{})",
+                cp.getName(),
+                Utility.americanDoubleFormatter.format(perceivedTemperature),
+                Utility.americanDoubleFormatter.format(minPerceivedTemperature),
+                Utility.americanDoubleFormatter.format(maxPerceivedTemperature));
 
-        if (deltaPerceived < 0.5) {
-            // TODO: Evaluate hysteresis
-        } else if (deltaPerceived < 1) {
-            // Cool, 0, LOW
+        // Evaluating hysteresis
+        if (perceivedTemperature > maxPerceivedTemperature) {
+
+            // For now we are concerned with > 0 deltas (i.e. summer cooling: if delta is < 0 the temperature is fine)
+            final double deltaPerceived = perceivedTemperature - minPerceivedTemperature;
+
+            if (deltaPerceived < 1) {
+                // Cool, 0, LOW
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(0.0)
+                        .changeFanSpeed(FanSpeed.LOW);
+            } else if (deltaPerceived < 1.5) {
+                // Cool, -1, LOW
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-1.0)
+                        .changeFanSpeed(FanSpeed.LOW);
+            } else if (deltaPerceived < 2) {
+                // Cool, -1, MEDIUM
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-1.0)
+                        .changeFanSpeed(FanSpeed.MEDIUM);
+            } else if (deltaPerceived < 2.5) {
+                // Cool, -1, HIGH
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-1.0)
+                        .changeFanSpeed(FanSpeed.HIGH);
+            } else if (deltaPerceived < 3) {
+                // Cool, -2, LOW
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-2.0)
+                        .changeFanSpeed(FanSpeed.LOW);
+            } else if (deltaPerceived < 3.5) {
+                // Cool, -2, MEDIUM
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-2.0)
+                        .changeFanSpeed(FanSpeed.MEDIUM);
+            } else if (deltaPerceived < 4) {
+                // Cool, -3, LOW
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-3.0)
+                        .changeFanSpeed(FanSpeed.LOW);
+            } else if (deltaPerceived < 4.5) {
+                // Cool, -3, MEDIUM
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-3.0)
+                        .changeFanSpeed(FanSpeed.MEDIUM);
+            } else {
+                // Cool, -3, HIGH
+                desired = current.duplicate()
+                        .changeStatus(Status.ON)
+                        .changeOpMode(OpMode.COOL)
+                        .changeDelta(-3.0)
+                        .changeFanSpeed(FanSpeed.HIGH);
+            }
+
+            motivation = Illness.LOWER_TEMPERATURE_NEEDED;
+        }
+        else if (perceivedTemperature < minPerceivedTemperature) {
+
+            // We are in calm waters (turning off)
             desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
+                    .changeStatus(Status.OFF)
                     .changeDelta(0.0)
                     .changeFanSpeed(FanSpeed.LOW);
-        } else if (deltaPerceived < 1.5) {
-            // Cool, -1, LOW
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-1.0)
-                    .changeFanSpeed(FanSpeed.LOW);
-        } else if (deltaPerceived < 2) {
-            // Cool, -1, MEDIUM
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-1.0)
-                    .changeFanSpeed(FanSpeed.MEDIUM);
-        } else if (deltaPerceived < 2.5) {
-            // Cool, -1, HIGH
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-1.0)
-                    .changeFanSpeed(FanSpeed.HIGH);
-        } else if (deltaPerceived < 3) {
-            // Cool, -2, LOW
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-2.0)
-                    .changeFanSpeed(FanSpeed.LOW);
-        } else if (deltaPerceived < 3.5) {
-            // Cool, -2, MEDIUM
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-2.0)
-                    .changeFanSpeed(FanSpeed.MEDIUM);
-        } else if (deltaPerceived < 4) {
-            // Cool, -3, LOW
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-3.0)
-                    .changeFanSpeed(FanSpeed.LOW);
-        } else if (deltaPerceived < 4.5) {
-            // Cool, -3, MEDIUM
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-3.0)
-                    .changeFanSpeed(FanSpeed.MEDIUM);
-        } else {
-            // Cool, -3, HIGH
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeOpMode(OpMode.COOL)
-                    .changeDelta(-3.0)
-                    .changeFanSpeed(FanSpeed.HIGH);
+
+            motivation = Illness.ALL_OK;
         }
+
+        // If temperature does not turn on HVAC we have to check if co2 does
+        if (desired == null || desired.getStatus() == Status.OFF) {
+
+            final int co2Value = rs.getCo2();
+            final int minCo2Value = programConfig.getMinCo2Value();
+            final int maxCo2Value = programConfig.getMaxCo2Value();
+
+            l.debug("\"{}\" co2 value {} (threshold {}/{})",
+                    cp.getName(),
+                    co2Value,
+                    minCo2Value,
+                    maxCo2Value);
+
+            if (co2Value > maxCo2Value) {
+
+                final int deltaCo2 = co2Value - maxCo2Value;
+
+                if (deltaCo2 > 750) {
+                    // Fan, 0, MEDIUM
+                    desired = current.duplicate()
+                            .changeStatus(Status.ON)
+                            .changeOpMode(OpMode.FAN)
+                            .changeDelta(0.0)
+                            .changeFanSpeed(FanSpeed.MEDIUM);
+                } else {
+                    // Fan, 0, MEDIUM
+                    desired = current.duplicate()
+                            .changeStatus(Status.ON)
+                            .changeOpMode(OpMode.FAN)
+                            .changeDelta(0.0)
+                            .changeFanSpeed(FanSpeed.LOW);
+                }
+
+                motivation = Illness.LOWER_CO2_NEEDED;
+
+            }
+            else if (co2Value < minCo2Value) {
+
+                // We are in calm waters (turning off)
+                desired = current.duplicate()
+                        .changeStatus(Status.OFF)
+                        .changeDelta(0.0)
+                        .changeFanSpeed(FanSpeed.LOW);
+
+                motivation = Illness.ALL_OK;
+            }
+        }
+
 
         // If is set "forceOn" it means that even if we believe
         // that device should be turned off we keep it going
@@ -418,10 +539,15 @@ public class Operation {
                         .changeOpMode(OpMode.COOL)
                         .changeDelta(0.0)
                         .changeFanSpeed(FanSpeed.LOW);
+
+                motivation = Illness.ALL_OK;
             }
         }
 
-        return desired;
+        if (motivation == null)
+            motivation = Illness.ALL_OK;
+
+        return new Pair<>(desired, motivation);
     }
 
     private static void shutdownProgram(Config cfg) {

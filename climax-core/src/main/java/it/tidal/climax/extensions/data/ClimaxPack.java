@@ -2,6 +2,10 @@ package it.tidal.climax.extensions.data;
 
 import it.tidal.climax.database.mapping.HVACStatus;
 import it.tidal.climax.database.mapping.RoomStatus;
+import it.tidal.config.utils.AdvancedTemperatureSensor;
+import it.tidal.config.utils.GenericIntakeDetector;
+import it.tidal.config.utils.IntakeDetector;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,9 +23,9 @@ public class ClimaxPack implements Serializable {
     private ArrayList<Double> roomTemperatures;
     private ArrayList<Integer> roomHumidities;
 
-    private RoomStatus roomStatus;
-    private RoomStatus intakeStatus;
-    private RoomStatus outsideStatus;
+    private AdvancedTemperatureSensor roomStatus;
+    private AdvancedTemperatureSensor outsideStatus;
+    private GenericIntakeDetector intakeDetector;
 
     private CoolAutomation currentHVACConfig;
     private CoolAutomation desiredHVACConfig;
@@ -65,27 +69,27 @@ public class ClimaxPack implements Serializable {
         this.roomHumidities = roomHumidities;
     }
 
-    public RoomStatus getRoomStatus() {
+    public AdvancedTemperatureSensor getRoomStatus() {
         return roomStatus;
     }
 
-    public void setRoomStatus(RoomStatus roomStatus) {
+    public void setRoomStatus(AdvancedTemperatureSensor roomStatus) {
         this.roomStatus = roomStatus;
     }
 
-    public RoomStatus getIntakeStatus() {
-        return intakeStatus;
+    public GenericIntakeDetector getIntakeDetector() {
+        return intakeDetector;
     }
 
-    public void setIntakeStatus(RoomStatus intakeStatus) {
-        this.intakeStatus = intakeStatus;
+    public void setIntakeDetector(GenericIntakeDetector intakeDetector) {
+        this.intakeDetector = intakeDetector;
     }
 
-    public RoomStatus getOutsideStatus() {
+    public AdvancedTemperatureSensor getOutsideStatus() {
         return outsideStatus;
     }
 
-    public void setOutsideStatus(RoomStatus outsideStatus) {
+    public void setOutsideStatus(AdvancedTemperatureSensor outsideStatus) {
         this.outsideStatus = outsideStatus;
     }
 
