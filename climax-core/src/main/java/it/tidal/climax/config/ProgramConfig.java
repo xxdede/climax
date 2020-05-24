@@ -18,6 +18,7 @@ public class ProgramConfig implements Serializable {
     private String name;
     private boolean active;
     private int priority = 0;
+    private int maxEagerDevices = 1;
     private LocalDateTime start;
     private LocalDateTime end;
     private double minPerceivedTemperature = 32.5;
@@ -91,6 +92,14 @@ public class ProgramConfig implements Serializable {
 
     public void setPriority(int priority) {
         this.priority = priority;
+    }
+
+    public int getMaxEagerDevices() {
+        return maxEagerDevices;
+    }
+
+    public void setMaxEagerDevices(int maxEagerDevices) {
+        this.maxEagerDevices = maxEagerDevices;
     }
 
     public LocalDateTime getStart() {

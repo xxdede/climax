@@ -17,16 +17,11 @@ import it.tidal.climax.extensions.data.SolarEdgeEnergy;
 import it.tidal.climax.extensions.managers.*;
 import it.tidal.config.utils.*;
 import it.tidal.logging.Log;
-import org.javatuples.Pair;
-import org.javatuples.Quartet;
-import org.javatuples.Quintet;
-import org.javatuples.Triplet;
+import org.javatuples.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class Operation {
 
@@ -141,6 +136,7 @@ public class Operation {
         l.debug("Retrieving thermo status...");
         NetAtmoManager nam = NetAtmoManager.getInstance(cfg.getNetAtmo(), true);
 
+        // First round to get all statuses
         for (CoolAutomationDeviceConfig cadc
                 : cfg.getCoolAutomation().getDevices()) {
 
@@ -238,22 +234,20 @@ public class Operation {
             }
         }
 
-        if (false) {
-            // TODO: check consumption and define how many device we can turn on
-        }
-
         // Selecting program to execute between candidates
         final ProgramConfig programConfig = ConfigManager.suitableProgramConfig(cfg.getPrograms(), now);
 
         // Map with deviceName -> coolAutomationDevice, currentConfig, desiredConfig, climaxPack, Illness motivation
-        final HashMap<String, Quintet<CoolAutomationDeviceConfig, CoolAutomation, CoolAutomation, ClimaxPack, String>> environment = new HashMap<>();
+        final HashMap<String, Sextet<CoolAutomationDeviceConfig, CoolAutomation, CoolAutomation, OperationMode, ClimaxPack, String>> environment = new HashMap<>();
+
+        // Set where I put devices that will drain a lot of energy if and when turned on
+        final HashSet<String> eagerDevices = new HashSet<>();
 
         // Cycling (again) through device to decide what to do
         for (CoolAutomationDeviceConfig cadc
                 : cfg.getCoolAutomation().getDevices()) {
 
             final String devName = cadc.getName();
-            final CoolAutomationManager cam = CoolAutomationManager.getInstance(cadc);
             final OperationMode desiredOpMode = ConfigManager.suitableOperationMode(programConfig, devName, normalizedNow);
 
             final ClimaxPack cp = cps.get(devName);
@@ -361,18 +355,58 @@ public class Operation {
                     break;
             }
 
-            cam.disconnect();
+            // Check if device will be eager
+            if (desired != null && desired.getStatus() == Status.ON && (desired.getOpMode() == OpMode.COOL || desired.getOpMode() == OpMode.DRY || desired.getOpMode() == OpMode.HEAT)) {
 
-            // Store results
-            environment.put(devName, new Quintet<>(cadc, current, desired, cp, result.getValue1()));
+                    eagerDevices.add(devName);
+            }
+
+            // Store all results
+            environment.put(devName, new Sextet<>(cadc, current, desired, desiredOpMode, cp, (result != null ? result.getValue1() : null)));
 
             l.debug("Desired: " + (desired != null ? desired.getDescription() : current.getDescription() + " (no changes)") + ".");
         }
 
-        // DEBUG: printing data
-        l.json(environment, true);
+        // Checking if there are too eager devices
+        final HashSet<String> limitedDevices = new HashSet<>();
 
-        // TODO: decide which one to activate (if more than one) cycle again and operate
+        if (programConfig.getMaxEagerDevices() > eagerDevices.size()) {
+
+            int deviceToLimit = eagerDevices.size() - programConfig.getMaxEagerDevices();
+
+            // First of all limit every device that is not explicity set to OPERATE_IF_ON then use random picks or, at last, go sequentially
+            for (int phase = 1; phase < 100; phase++) {
+
+                for (String devName : environment.keySet()) {
+
+                    final Sextet<CoolAutomationDeviceConfig, CoolAutomation, CoolAutomation, OperationMode, ClimaxPack, String> tuple = environment.get(devName);
+                    final OperationMode desiredOpMode = tuple.getValue3();
+
+                    if (deviceToLimit > 0 &&
+                            ((desiredOpMode != OperationMode.OPERATE_IF_ON) ||
+                             (phase > 1 && Math.random() > 0.4) ||
+                              phase == 99)
+                            ) {
+
+                        final CoolAutomation desired = tuple.getValue2();
+                        desired.setOpMode(OpMode.FAN);
+                        desired.setFanSpeed(FanSpeed.LOW);
+
+                        l.warn("Limiting device \"{}\" due to eager constraints (phase {}).", devName, phase);
+
+                        eagerDevices.remove(devName);
+                        limitedDevices.add(devName);
+                        deviceToLimit--;
+                    }
+                }
+
+                if (deviceToLimit <= 0)
+                    break;
+            }
+        }
+
+        // DEBUG: printing data
+        //l.json(environment, true);
     }
 
     private static Pair<CoolAutomation, String> desiredSetup(boolean forceOn, ClimaxPack cp, ProgramConfig programConfig) {
