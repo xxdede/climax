@@ -118,6 +118,8 @@ public class Operation {
         final DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
         final HashMap<String, ClimaxPack> cps = new HashMap<>();
 
+        final HashMap<String, RoomStatus> rss = new HashMap<>();
+
         // Energy statuses
         l.debug("Retrieving energy status...");
         TreeMap<LocalDateTime, EnergyStatus> ess;
@@ -407,6 +409,86 @@ public class Operation {
 
         // DEBUG: printing data
         //l.json(environment, true);
+
+        // Action to be done
+        boolean operateOnHVAC = (cfg.getVariant() != Variant.LOG_ONLY && cfg.getVariant() != Variant.UPDATE_DB_ONLY);
+        boolean updateDB = (cfg.getVariant() != Variant.LOG_ONLY);
+
+        // Operation
+        if (!operateOnHVAC) {
+
+            l.info("Not operating on devices because \"{}\" variant is set", cfg.getVariant());
+        }
+        else {
+
+            // Cycling (again) through device to operate and/or update DB
+            for (String devName : environment.keySet()) {
+
+                // A little bit of pause...
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException ex) {
+                }
+
+                final Sextet<CoolAutomationDeviceConfig, CoolAutomation, CoolAutomation, OperationMode, ClimaxPack, String> tuple = environment.get(devName);
+
+                // Unpacking tuple
+                final CoolAutomationDeviceConfig cadc = tuple.getValue0();
+                final CoolAutomation current = tuple.getValue1();
+                final CoolAutomation desired = tuple.getValue2();
+                final OperationMode desiredOpMode = tuple.getValue3();
+                final ClimaxPack cp = tuple.getValue4();
+                final String result = tuple.getValue5();
+
+                // Executing HVAC update
+                if (desired != null && !desired.equals(current)) {
+
+                    final CoolAutomationManager cam = CoolAutomationManager.getInstance(cadc);
+
+                    l.info("Sending commands to device \"{}\"...", devName);
+                    cam.setAll(current, desired);
+                    cam.disconnect();
+                }
+
+                // TODO: execute also actuator update
+            }
+        }
+
+        // Database update
+        if (!updateDB) {
+
+            l.info("Not updating DB because \"{}\" variant is set", cfg.getVariant());
+        }
+        else {
+
+            // All netatmos
+            for (Map.Entry<String, NetAtmo> entry : nam.getCache().entrySet())
+                dbm.insertRoomStatus(entry.getValue().toRoomStatus(normalizedNowTs));
+
+            // All HVACs
+            for (String devName : environment.keySet()) {
+
+                final Sextet<CoolAutomationDeviceConfig, CoolAutomation, CoolAutomation, OperationMode, ClimaxPack, String> tuple = environment.get(devName);
+
+                // Unpacking tuple
+                final CoolAutomationDeviceConfig cadc = tuple.getValue0();
+                final CoolAutomation current = tuple.getValue1();
+                final CoolAutomation desired = tuple.getValue2();
+
+                // Creating DB statuses
+                final HVACStatus statusPre = new HVACStatus(cadc.getDbName(), normalizedNowTs, -1, current);
+                final HVACStatus statusPost = new HVACStatus(cadc.getDbName(), normalizedNowTs, 0, (desired != null ? desired : current));
+
+                dbm.insertHVACStatus(statusPre);
+                dbm.insertHVACStatus(statusPost);
+            }
+
+            // All SolarEdge
+            //dbm.checkAndInsertSolarEdgeEnergy();
+
+            // Closing DB connection
+            dbm.dispose();
+        }
     }
 
     private static Pair<CoolAutomation, String> desiredSetup(boolean forceOn, ClimaxPack cp, ProgramConfig programConfig) {

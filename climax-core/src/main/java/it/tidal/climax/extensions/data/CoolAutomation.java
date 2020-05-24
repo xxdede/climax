@@ -3,6 +3,7 @@ package it.tidal.climax.extensions.data;
 import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * CoolAutomation Data Extensions. Contains status about a CoolAutomation
@@ -402,5 +403,24 @@ public class CoolAutomation implements Serializable {
     public CoolAutomation changeDelta(double delta) {
         this.setTemperature = this.roomTemperature + delta;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CoolAutomation)) return false;
+        CoolAutomation that = (CoolAutomation) o;
+        return Double.compare(that.setTemperature, setTemperature) == 0 &&
+                Double.compare(that.roomTemperature, roomTemperature) == 0 &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(lineId, that.lineId) &&
+                status == that.status &&
+                fanSpeed == that.fanSpeed &&
+                opMode == that.opMode;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, lineId, status, setTemperature, roomTemperature, fanSpeed, opMode);
     }
 }

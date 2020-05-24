@@ -331,4 +331,14 @@ public class CoolAutomationManager {
             return null;
         }
     }
+
+    public CoolAutomation setAll(CoolAutomation prevData, CoolAutomation newData) {
+
+        if (prevData == null || newData == null)
+            return null;
+
+        int delta = (int) Math.round(prevData.getSetTemperature() - newData.getSetTemperature());
+
+        return setAll(prevData, newData.getOpMode(), newData.getFanSpeed(), newData.getStatus(), delta);
+    }
 }

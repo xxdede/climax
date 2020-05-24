@@ -402,6 +402,10 @@ public class NetAtmoManager {
         return na;
     }
 
+    public HashMap<String, NetAtmo> getCache() {
+        return cache;
+    }
+
     public String getAccessToken() {
         return accessToken;
     }

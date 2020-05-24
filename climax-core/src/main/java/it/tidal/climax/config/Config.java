@@ -17,7 +17,9 @@ public class Config implements Serializable {
         @SerializedName("standard")
         STANDARD(0),
         @SerializedName("log-only")
-        LOG_ONLY(1);
+        LOG_ONLY(1),
+        @SerializedName("update-db-only")
+        UPDATE_DB_ONLY(2);
 
         private final int v;
 
