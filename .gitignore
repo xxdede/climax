@@ -15,3 +15,5 @@ Thumbs\.db
 /files/*\.conf
 /climax-gui/target/
 climax-core/.idea/
+
+files/old.conf.example
