@@ -15,6 +15,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -156,6 +157,26 @@ public class ConfigManager {
         }
 
         return findDevice(cfg, deviceConfig.getName());
+    }
+
+    public static ArrayList<DeviceFamiliable> findAllDevices(Config cfg, List<GenericDeviceConfig> deviceConfigs) {
+
+        ArrayList<DeviceFamiliable> res = new ArrayList<>();
+
+        if (cfg == null || deviceConfigs == null) {
+
+            return res;
+        }
+
+        for (GenericDeviceConfig gdc : deviceConfigs) {
+
+            final DeviceFamiliable df = findDevice(cfg, gdc.getName());
+
+            if (df != null)
+                res.add(df);
+        }
+
+        return res;
     }
 
     public static DeviceFamiliable findDevice(Config cfg, String deviceName) {

@@ -5,6 +5,7 @@ import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.DeviceFamily;
 import it.tidal.config.utils.Utility;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CoolAutomationDeviceConfig implements Serializable, DeviceFamiliable {
@@ -104,6 +105,21 @@ public class CoolAutomationDeviceConfig implements Serializable, DeviceFamiliabl
         }
 
         return null;
+    }
+
+    public ArrayList<GenericDeviceConfig> findAllRelateds(GenericDeviceConfig.Role role) {
+
+        ArrayList<GenericDeviceConfig> res = new ArrayList<>();
+
+        if (this.related != null) {
+            for (GenericDeviceConfig gdc : this.related) {
+                if (gdc.getRole() == role) {
+                    res.add(gdc);
+                }
+            }
+        }
+
+        return res;
     }
 
     @Override

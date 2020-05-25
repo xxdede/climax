@@ -173,8 +173,30 @@ public class Operation {
             cp.setLastHVACStatus(tempHssPost.lastEntry().getValue());
 
             // Room statuses (previous and current)
-            final DeviceFamiliable itp = ConfigManager.findDevice(cfg, cadc.findRelated(GenericDeviceConfig.Role.INSIDE_TEMPERATURE_PROVIDER));
+            final ArrayList<DeviceFamiliable> itps = ConfigManager.findAllDevices(cfg, cadc.findAllRelateds(GenericDeviceConfig.Role.INSIDE_TEMPERATURE_PROVIDER));
+            DeviceFamiliable itp = null;
 
+            if (itps.size() == 1)
+                itp = itps.iterator().next();
+            else {
+
+                double worstPerceived = 0.0;
+
+                // if there's more than one inside temperature provider we'll keep the worst one (highest perceived)
+                for (DeviceFamiliable tempItp : itps) {
+
+                    final RoomStatus tempRoomStatus = nam.getData(tempItp.getName()).toRoomStatus(normalizedNowTs);
+                    final double tempPerceived = tempRoomStatus.getPerceived();
+
+                    if (tempPerceived > worstPerceived) {
+
+                        worstPerceived = tempPerceived;
+                        itp = tempItp;
+                    }
+                }
+            }
+
+            // Room statuses (previous and current)
             if (itp != null) {
 
                 final TreeMap<LocalDateTime, RoomStatus> tempRss;
@@ -504,9 +526,10 @@ public class Operation {
         final double minPerceivedTemperature = programConfig.getMinPerceivedTemperature();
         final double maxPerceivedTemperature = programConfig.getMaxPerceivedTemperature();
 
-        l.debug("\"{}\" perceived temperature {} (threshold {}/{})",
+        l.debug("\"{}\" perceived temperature {} from \"{}\" (threshold {}/{})",
                 cp.getName(),
                 Utility.americanDoubleFormatter.format(perceivedTemperature),
+                rs.getName(),
                 Utility.americanDoubleFormatter.format(minPerceivedTemperature),
                 Utility.americanDoubleFormatter.format(maxPerceivedTemperature));
 
