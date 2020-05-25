@@ -16,7 +16,9 @@ public class Illness implements Serializable {
     // Illness motivation
     public static String ALL_OK = "all_ok";
     public static String LOWER_TEMPERATURE_NEEDED = "lower_temperature";
+    public static String BORDER_TEMPERATURE = "border_temperature";
     public static String LOWER_CO2_NEEDED = "lower_co2";
+    public static String BORDER_CO2 = "border_co2";
 
     public enum Level {
 

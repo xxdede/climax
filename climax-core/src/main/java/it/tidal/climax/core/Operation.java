@@ -525,9 +525,7 @@ public class Operation {
             dbm.dispose();
         }
     }
-
-
-
+    
     private static void shutdownProgram(Config cfg) {
 
         for (CoolAutomationDeviceConfig cadc
@@ -839,6 +837,12 @@ public class Operation {
 
             motivation = Illness.ALL_OK;
         }
+        else {
+
+            // We are between min and max, we'll keep current status
+            desired = current.duplicate();
+            motivation = Illness.BORDER_TEMPERATURE;
+        }
 
         // If temperature does not turn on HVAC we have to check if co2 does
         if (desired == null || desired.getStatus() == Status.OFF) {
@@ -885,6 +889,12 @@ public class Operation {
                         .changeFanSpeed(FanSpeed.LOW);
 
                 motivation = Illness.ALL_OK;
+            }
+            else {
+
+                // We are between min and max, we'll keep current status
+                desired = current.duplicate();
+                motivation = Illness.BORDER_CO2;
             }
         }
 
