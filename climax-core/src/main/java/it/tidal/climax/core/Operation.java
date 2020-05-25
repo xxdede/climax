@@ -717,15 +717,15 @@ public class Operation {
             if (start == null || end == null) {
 
                 energy = sem.getEnergyDetails(now);
-                l.debug("Collected values with ts "
-                        + energy.getFirstTimestamp() + ".");
+                l.debug("Collected SolarEdge values with ts "
+                        + energy.getFirstTimestamp() + " from the cloud.");
             } else {
 
                 energy = sem.getEnergyDetails(start, end);
 
                 final int tot = energy.getMeters().size();
-                l.debug("Collected " + tot + " value"
-                        + (tot != 1 ? "s." : "."));
+                l.debug("Collected " + tot + " SolarEdge value"
+                        + (tot != 1 ? "s" : "") + " from the cloud.");
             }
 
         } catch (Exception ex) {
