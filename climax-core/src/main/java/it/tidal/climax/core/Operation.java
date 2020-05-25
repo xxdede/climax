@@ -379,8 +379,14 @@ public class Operation {
                     break;
             }
 
+            // Since we are managing cooling, we need to check that no heating is set
+            if (desired != null && (desired.getOpMode() == OpMode.HEAT || desired.getOpMode() == OpMode.HAUX)) {
+
+                desired.setOpMode(OpMode.FAN);
+            }
+
             // Check if device will be eager
-            if (desired != null && desired.getStatus() == Status.ON && (desired.getOpMode() == OpMode.COOL || desired.getOpMode() == OpMode.DRY || desired.getOpMode() == OpMode.HEAT)) {
+            if (desired != null && desired.getStatus() == Status.ON && desired.getOpMode() != OpMode.FAN) {
 
                     eagerDevices.add(devName);
             }
