@@ -121,10 +121,12 @@ public class Operation {
         final HashMap<String, RoomStatus> rss = new HashMap<>();
 
         // Energy statuses
-        l.debug("Retrieving energy status...");
+        l.debug("Retrieving energy status from db and solaredge...");
         TreeMap<LocalDateTime, EnergyStatus> ess;
         ess = dbm.splitQuarterOfHourToTenMinutesEnergyStatuses(
                 dbm.retrieveLastEnergyStatus(4));
+
+        SolarEdgeEnergy latestEs = _retrieveSolarEdgeEnergy(cfg.getSolarEdge(), null, null, now);
 
         // HVAC statuses (pre: before last exec, post: after last exec)
         l.debug("Retrieving hvac status...");
@@ -300,7 +302,7 @@ public class Operation {
                 case ENABLED:
 
                     l.info("Device \"{}\" is {}, forcing it (case {})!", devName, current.getStatus(), desiredOpMode);
-                    result = desiredSetup(true, cp, programConfig);
+                    result = _desiredSetup(true, cp, programConfig);
                     desired = result.getValue0();
 
                     break;
@@ -310,7 +312,7 @@ public class Operation {
                     if (current.getStatus() == Status.ON) {
 
                         l.info("Device \"{}\" is {}, managing it (case {})...", devName, current.getStatus(), desiredOpMode);
-                        result = desiredSetup(false, cp, programConfig);
+                        result = _desiredSetup(false, cp, programConfig);
                         desired = result.getValue0();
 
                     } else {
@@ -360,7 +362,7 @@ public class Operation {
 
                     if (shouldOperate) {
 
-                        result = desiredSetup(false, cp, programConfig);
+                        result = _desiredSetup(false, cp, programConfig);
                         desired = result.getValue0();
                     }
 
@@ -369,7 +371,7 @@ public class Operation {
                 case OPERATE_AUTO:
 
                     l.info("Device \"{}\" is {}, managing it (case {})!", devName, current.getStatus(), desiredOpMode);
-                    result = desiredSetup(false, cp, programConfig);
+                    result = _desiredSetup(false, cp, programConfig);
                     desired = result.getValue0();
                     break;
 
@@ -490,8 +492,10 @@ public class Operation {
         else {
 
             // All netatmos
-            for (Map.Entry<String, NetAtmo> entry : nam.getCache().entrySet())
+            for (Map.Entry<String, NetAtmo> entry : nam.getCache().entrySet()) {
+
                 dbm.insertRoomStatus(entry.getValue().toRoomStatus(normalizedNowTs));
+            }
 
             // All HVACs
             for (String devName : environment.keySet()) {
@@ -512,14 +516,227 @@ public class Operation {
             }
 
             // All SolarEdge
-            //dbm.checkAndInsertSolarEdgeEnergy();
+            if (latestEs != null) {
+
+                dbm.checkAndInsertSolarEdgeEnergy(latestEs);
+            }
 
             // Closing DB connection
             dbm.dispose();
         }
     }
 
-    private static Pair<CoolAutomation, String> desiredSetup(boolean forceOn, ClimaxPack cp, ProgramConfig programConfig) {
+
+
+    private static void shutdownProgram(Config cfg) {
+
+        for (CoolAutomationDeviceConfig cadc
+                : cfg.getCoolAutomation().getDevices()) {
+
+            final String devName = cadc.getName();
+
+            try {
+
+                // Check status of device
+                final CoolAutomationManager cam;
+                final CoolAutomation previous;
+
+                cam = CoolAutomationManager.getInstance(cadc);
+                previous = cam.getDeviceData();
+
+                l.debug("Turning device \"" + devName + "\" off...");
+
+                if (previous.getStatus() == Status.OFF) {
+
+                    l.info("Device \"" + devName + "\" already off...");
+
+                } else if (!Variant.LOG_ONLY.equals(cfg.getVariant())) {
+
+                    CoolAutomation current = cam.setAll(previous,
+                            previous.getOpMode(), previous.getFanSpeed(),
+                            Status.OFF, 0);
+
+                    if (current != null) {
+                        l.info("Device \"" + devName + "\" turned off.");
+                    } else {
+                        l.error("Something went wrong while turning off"
+                                + " device \"{}\"!", devName);
+                    }
+
+                    // Shutdown usually is triggered and not scheduled
+                    // so we do not add its data to database
+                }
+
+                cam.disconnect();
+            } catch (Exception ex) {
+
+                l.error("A problem occurred while turning off device \"" + devName + "\"!", ex);
+            }
+        }
+    }
+
+    private static void solarEdgeProgram(Config cfg,
+            Long start, Long end, LocalDateTime now) {
+
+        final SolarEdgeEnergy energy = _retrieveSolarEdgeEnergy(cfg.getSolarEdge(), start, end, now);
+
+        try {
+
+            if (Variant.LOG_ONLY.equals(cfg.getVariant())) {
+                l.info(Utility.prettyJson(energy));
+            } else {
+
+                DatabaseManager dbm;
+                dbm = DatabaseManager.getInstance(cfg.getMySQL());
+                dbm.checkAndInsertSolarEdgeEnergy(energy);
+                dbm.dispose();
+            }
+
+        } catch (Exception ex) {
+
+            l.error("An error occurred while saving to DB!", ex);
+        }
+    }
+
+    private static void co2Program(Config cfg, LocalDateTime now, Integer lowerBound, Integer upperBound) {
+
+        final DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
+
+        // Dispositivi coinvolti
+        final String sourceDeviceName = "camera";
+        final String destinationDeviceName = "Piano 1";
+
+        if (lowerBound == null)
+            lowerBound = 950;
+        if (upperBound == null)
+            upperBound = 1300;
+
+        if (lowerBound >= upperBound)
+            lowerBound = upperBound - 150;
+
+        // Controllo nel database l'ultimo valore
+        final TreeMap<LocalDateTime, RoomStatus> tempRss;
+        tempRss = dbm.retrieveLastRoomStatus(sourceDeviceName, 1);
+
+        if (tempRss == null || tempRss.size() < 1) {
+
+            l.error("Cannot find source device status (name: {})!", sourceDeviceName);
+            return;
+        }
+
+        final LocalDateTime time = tempRss.firstKey();
+        final Duration elapsed = Duration.between(time, now);
+
+        // Se è passata più di mezz'ora non va bene...
+        if (elapsed.toMinutes() > 30) {
+
+            l.error("Last room status is {} minutes old, bailing out!", elapsed.toMinutes());
+            return;
+        }
+
+        final RoomStatus roomStatus = tempRss.get(time);
+        boolean shouldBeActivated = false;
+        boolean shouldBeDeactivated = false;
+
+        if (roomStatus.getCo2() > upperBound)
+            shouldBeActivated = true;
+        else if (roomStatus.getCo2() < lowerBound)
+            shouldBeDeactivated = true;
+        else {
+
+            l.info("Leaving everything as is (co2: {}ppm, lo: {}ppm, hi: {}ppm)...", roomStatus.getCo2(), lowerBound, upperBound);
+            return;
+        }
+
+
+        final CoolAutomationManager cam = CoolAutomationManager.getInstance(cfg.getCoolAutomation().find(destinationDeviceName));
+
+        if (cam == null) {
+
+            l.error("Cannot find destination device {}!", destinationDeviceName);
+            return;
+        }
+
+        final CoolAutomation current = cam.getDeviceData();
+
+        if (current == null) {
+
+            l.error("Cannot find destination device status {}!", destinationDeviceName);
+            return;
+        }
+
+        if (current.getStatus() == Status.ON && current.getOpMode() != OpMode.FAN) {
+
+            l.info("HVAC is in {} mode, probably set manually... leaving it as is!", current.getOpMode());
+            return;
+        }
+
+        CoolAutomation desired = null;
+
+        if (current.getStatus() == Status.ON && shouldBeDeactivated) {
+
+            desired = current.duplicate().changeStatus(Status.OFF);
+        }
+        else if ((current.getStatus() == Status.OFF && shouldBeActivated) || current.getOpMode() != OpMode.FAN) {
+
+            desired = current.duplicate()
+                    .changeStatus(Status.ON)
+                    .changeFanSpeed(FanSpeed.LOW)
+                    .changeOpMode(OpMode.FAN);
+        }
+
+        if (desired != null) {
+
+            try {  Thread.sleep(2000); } catch (Exception ex) {}
+
+            cam.setAll(current,
+                    desired.getOpMode(),
+                    desired.getFanSpeed(),
+                    desired.getStatus(),
+                    0);
+
+            l.info("Change hvac, set it to {} (co2: {}ppm, lo: {}ppm, hi: {}ppm)!", desired.getStatus(), roomStatus.getCo2(), lowerBound, upperBound);
+        }
+        else {
+
+            l.info("Nothing to do, hvac is already ok as is ({}, co2: {}ppm, lo: {}ppm, hi: {}ppm)!", current.getStatus(), roomStatus.getCo2(), lowerBound, upperBound);
+        }
+    }
+
+    /* Common subprogram parts */
+
+    private static SolarEdgeEnergy _retrieveSolarEdgeEnergy(SolarEdgeConfig solarEdgeConfig, Long start, Long end, LocalDateTime now) {
+
+        SolarEdgeEnergy energy = null;
+
+        try {
+
+            final SolarEdgeManager sem;
+            sem = SolarEdgeManager.getInstance(solarEdgeConfig);
+
+            if (start == null || end == null) {
+
+                energy = sem.getEnergyDetails(now);
+                l.debug("Collected values with ts "
+                        + energy.getFirstTimestamp() + ".");
+            } else {
+
+                energy = sem.getEnergyDetails(start, end);
+
+                final int tot = energy.getMeters().size();
+                l.debug("Collected " + tot + " value"
+                        + (tot != 1 ? "s." : "."));
+            }
+
+        } catch (Exception ex) {
+
+            l.error("An error occurred with SolarEdge!", ex);
+        }
+
+        return energy;
+    }
+
+    private static Pair<CoolAutomation, String> _desiredSetup(boolean forceOn, ClimaxPack cp, ProgramConfig programConfig) {
 
         final CoolAutomation current = cp.getCurrentHVACConfig();
 
@@ -693,204 +910,5 @@ public class Operation {
             motivation = Illness.ALL_OK;
 
         return new Pair<>(desired, motivation);
-    }
-
-    private static void shutdownProgram(Config cfg) {
-
-        for (CoolAutomationDeviceConfig cadc
-                : cfg.getCoolAutomation().getDevices()) {
-
-            final String devName = cadc.getName();
-
-            try {
-
-                // Check status of device
-                final CoolAutomationManager cam;
-                final CoolAutomation previous;
-
-                cam = CoolAutomationManager.getInstance(cadc);
-                previous = cam.getDeviceData();
-
-                l.debug("Turning device \"" + devName + "\" off...");
-
-                if (previous.getStatus() == Status.OFF) {
-
-                    l.info("Device \"" + devName + "\" already off...");
-
-                } else if (!Variant.LOG_ONLY.equals(cfg.getVariant())) {
-
-                    CoolAutomation current = cam.setAll(previous,
-                            previous.getOpMode(), previous.getFanSpeed(),
-                            Status.OFF, 0);
-
-                    if (current != null) {
-                        l.info("Device \"" + devName + "\" turned off.");
-                    } else {
-                        l.error("Something went wrong while turning off"
-                                + " device \"{}\"!", devName);
-                    }
-
-                    // Shutdown usually is triggered and not scheduled
-                    // so we do not add its data to database
-                }
-
-                cam.disconnect();
-            } catch (Exception ex) {
-
-                l.error("A problem occurred while turning off device \"" + devName + "\"!", ex);
-            }
-        }
-    }
-
-    private static void solarEdgeProgram(Config cfg,
-            Long start, Long end, LocalDateTime now) {
-
-        SolarEdgeEnergy energy = null;
-
-        try {
-
-            final SolarEdgeManager sem;
-            sem = SolarEdgeManager.getInstance(cfg.getSolarEdge());
-
-            if (start == null || end == null) {
-
-                energy = sem.getEnergyDetails(now);
-                l.debug("Collected values with ts "
-                        + energy.getFirstTimestamp() + ".");
-            } else {
-
-                energy = sem.getEnergyDetails(start, end);
-
-                final int tot = energy.getMeters().size();
-                l.debug("Collected " + tot + " value"
-                        + (tot != 1 ? "s." : "."));
-            }
-
-        } catch (Exception ex) {
-
-            l.error("An error occurred with SolarEdge!", ex);
-        }
-
-        try {
-
-            if (Variant.LOG_ONLY.equals(cfg.getVariant())) {
-                l.info(Utility.prettyJson(energy));
-            } else {
-
-                DatabaseManager dbm;
-                dbm = DatabaseManager.getInstance(cfg.getMySQL());
-                dbm.checkAndInsertSolarEdgeEnergy(energy);
-                dbm.dispose();
-            }
-
-        } catch (Exception ex) {
-
-            l.error("An error occurred while saving to DB!", ex);
-        }
-    }
-
-    private static void co2Program(Config cfg, LocalDateTime now, Integer lowerBound, Integer upperBound) {
-
-        final DatabaseManager dbm = DatabaseManager.getInstance(cfg.getMySQL());
-
-        // Dispositivi coinvolti
-        final String sourceDeviceName = "camera";
-        final String destinationDeviceName = "Piano 1";
-
-        if (lowerBound == null)
-            lowerBound = 950;
-        if (upperBound == null)
-            upperBound = 1300;
-
-        if (lowerBound >= upperBound)
-            lowerBound = upperBound - 150;
-
-        // Controllo nel database l'ultimo valore
-        final TreeMap<LocalDateTime, RoomStatus> tempRss;
-        tempRss = dbm.retrieveLastRoomStatus(sourceDeviceName, 1);
-
-        if (tempRss == null || tempRss.size() < 1) {
-
-            l.error("Cannot find source device status (name: {})!", sourceDeviceName);
-            return;
-        }
-
-        final LocalDateTime time = tempRss.firstKey();
-        final Duration elapsed = Duration.between(time, now);
-
-        // Se è passata più di mezz'ora non va bene...
-        if (elapsed.toMinutes() > 30) {
-
-            l.error("Last room status is {} minutes old, bailing out!", elapsed.toMinutes());
-            return;
-        }
-
-        final RoomStatus roomStatus = tempRss.get(time);
-        boolean shouldBeActivated = false;
-        boolean shouldBeDeactivated = false;
-
-        if (roomStatus.getCo2() > upperBound)
-            shouldBeActivated = true;
-        else if (roomStatus.getCo2() < lowerBound)
-            shouldBeDeactivated = true;
-        else {
-
-            l.info("Leaving everything as is (co2: {}ppm, lo: {}ppm, hi: {}ppm)...", roomStatus.getCo2(), lowerBound, upperBound);
-            return;
-        }
-
-
-        final CoolAutomationManager cam = CoolAutomationManager.getInstance(cfg.getCoolAutomation().find(destinationDeviceName));
-
-        if (cam == null) {
-
-            l.error("Cannot find destination device {}!", destinationDeviceName);
-            return;
-        }
-
-        final CoolAutomation current = cam.getDeviceData();
-
-        if (current == null) {
-
-            l.error("Cannot find destination device status {}!", destinationDeviceName);
-            return;
-        }
-
-        if (current.getStatus() == Status.ON && current.getOpMode() != OpMode.FAN) {
-
-            l.info("HVAC is in {} mode, probably set manually... leaving it as is!", current.getOpMode());
-            return;
-        }
-
-        CoolAutomation desired = null;
-
-        if (current.getStatus() == Status.ON && shouldBeDeactivated) {
-
-            desired = current.duplicate().changeStatus(Status.OFF);
-        }
-        else if ((current.getStatus() == Status.OFF && shouldBeActivated) || current.getOpMode() != OpMode.FAN) {
-
-            desired = current.duplicate()
-                    .changeStatus(Status.ON)
-                    .changeFanSpeed(FanSpeed.LOW)
-                    .changeOpMode(OpMode.FAN);
-        }
-
-        if (desired != null) {
-
-            try {  Thread.sleep(2000); } catch (Exception ex) {}
-
-            cam.setAll(current,
-                    desired.getOpMode(),
-                    desired.getFanSpeed(),
-                    desired.getStatus(),
-                    0);
-
-            l.info("Change hvac, set it to {} (co2: {}ppm, lo: {}ppm, hi: {}ppm)!", desired.getStatus(), roomStatus.getCo2(), lowerBound, upperBound);
-        }
-        else {
-
-            l.info("Nothing to do, hvac is already ok as is ({}, co2: {}ppm, lo: {}ppm, hi: {}ppm)!", current.getStatus(), roomStatus.getCo2(), lowerBound, upperBound);
-        }
     }
 }
