@@ -178,35 +178,55 @@ public class Operation {
             final ArrayList<DeviceFamiliable> itps = ConfigManager.findAllDevices(cfg, cadc.findAllRelateds(GenericDeviceConfig.Role.INSIDE_TEMPERATURE_PROVIDER));
             DeviceFamiliable itp = null;
 
-            if (itps.size() == 1)
+            if (itps.size() == 1) {
+
                 itp = itps.iterator().next();
-            else {
 
-                double worstPerceived = 0.0;
-
-                // if there's more than one inside temperature provider we'll keep the worst one (highest perceived)
-                for (DeviceFamiliable tempItp : itps) {
-
-                    final RoomStatus tempRoomStatus = nam.getData(tempItp.getName()).toRoomStatus(normalizedNowTs);
-                    final double tempPerceived = tempRoomStatus.getPerceived();
-
-                    if (tempPerceived > worstPerceived) {
-
-                        worstPerceived = tempPerceived;
-                        itp = tempItp;
-                    }
-                }
-            }
-
-            // Room statuses (previous and current)
-            if (itp != null) {
-
+                // Search historical data
                 final TreeMap<LocalDateTime, RoomStatus> tempRss;
                 tempRss = dbm.retrieveLastRoomStatus(itp.getDbName(), 6);
 
                 // Update climax pack
-                cp.updateWithRoomStatuses(tempRss);
+                cp.updateTemperatureAndHumidityWithRoomStatuses(tempRss);
                 cp.setRoomStatus(nam.getData(itp.getName()).toRoomStatus(normalizedNowTs));
+            }
+            else {
+
+                RoomStatus worstPerceived = null;
+                String worstPerceivedDbName = null;
+
+                RoomStatus worstCo2 = null;
+                String worstCo2DbName = null;
+
+                // If there's more than one inside temperature provider we'll keep the worst ones
+                for (DeviceFamiliable tempItp : itps) {
+
+                    final RoomStatus tempRoomStatus = nam.getData(tempItp.getName()).toRoomStatus(normalizedNowTs);
+
+                    if (tempRoomStatus.getPerceived() != null && (worstPerceived == null || tempRoomStatus.getPerceived() > worstPerceived.getPerceived())) {
+
+                        worstPerceived = tempRoomStatus.duplicate();
+                        worstPerceivedDbName = tempItp.getDbName();
+                    }
+
+                    if (tempRoomStatus.getCo2() != null && (worstCo2 == null || tempRoomStatus.getCo2() > worstCo2.getCo2())) {
+
+                        worstCo2 = tempRoomStatus.duplicate();
+                        worstCo2DbName = tempItp.getDbName();
+                    }
+                }
+
+                // Merge the two (all data from first one only co2 value from the second)
+                final RoomStatus roomStatus = worstPerceived.duplicate();
+                roomStatus.setCo2(worstCo2.getCo2());
+
+                // Search historical data
+                final TreeMap<LocalDateTime, RoomStatus> tempRss;
+                tempRss = dbm.retrieveLastRoomStatus(worstPerceivedDbName, 6);
+
+                // Update climax pack
+                cp.updateTemperatureAndHumidityWithRoomStatuses(tempRss);
+                cp.setRoomStatus(roomStatus);
             }
 
             // Outside status
@@ -525,7 +545,7 @@ public class Operation {
             dbm.dispose();
         }
     }
-    
+
     private static void shutdownProgram(Config cfg) {
 
         for (CoolAutomationDeviceConfig cadc

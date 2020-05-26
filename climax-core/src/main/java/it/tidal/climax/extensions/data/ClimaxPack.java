@@ -109,7 +109,7 @@ public class ClimaxPack implements Serializable {
         this.desiredHVACConfig = desiredHVACConfig;
     }
 
-    public void updateWithRoomStatuses(TreeMap<LocalDateTime, RoomStatus> rss) {
+    public void updateTemperatureAndHumidityWithRoomStatuses(TreeMap<LocalDateTime, RoomStatus> rss) {
 
         this.roomTemperatures = new ArrayList<>(rss.size());
         this.roomHumidities = new ArrayList<>(rss.size());

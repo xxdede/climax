@@ -6,6 +6,7 @@
 package it.tidal.climax.database.mapping;
 
 import it.tidal.climax.core.Illness;
+import it.tidal.climax.extensions.data.CoolAutomation;
 import it.tidal.config.utils.AdvancedTemperatureSensor;
 import it.tidal.config.utils.Co2Queryable;
 import it.tidal.config.utils.PerceivedQueryable;
@@ -183,5 +184,21 @@ SELECT * FROM camera; SELECT * FROM studio; SELECT * FROM sala; SELECT * FROM ca
                 + " perceived temperature: " + Utility.americanDoubleFormatter
                         .format(perceived)
                 + ", illness level: " + getIllnessEnum();
+    }
+
+    public RoomStatus duplicate() {
+
+        RoomStatus rs = new RoomStatus();
+
+        rs.perceived = perceived;
+        rs.illness = illness;
+
+        rs.name = name;
+        rs.timestamp = timestamp;
+        rs.temperature = temperature;
+        rs.humidity = humidity;
+        rs.co2 = co2;
+
+        return rs;
     }
 }
