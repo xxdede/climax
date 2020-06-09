@@ -6,6 +6,7 @@ import it.tidal.config.utils.DeviceFamiliable;
 import it.tidal.config.utils.DeviceFamily;
 import it.tidal.config.utils.Utility;
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
 
@@ -41,7 +42,7 @@ public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
 
     private String name;
     private String ipAddress;
-    private Integer port;
+    private ArrayList<Integer> ports;
     private Type type;
     private String dbName;
 
@@ -67,12 +68,12 @@ public class WemoDeviceConfig implements Serializable, DeviceFamiliable {
         this.ipAddress = ipAddress;
     }
 
-    public Integer getPort() {
-        return port;
+    public ArrayList<Integer> getPorts() {
+        return ports;
     }
 
-    public void setPort(Integer port) {
-        this.port = port;
+    public void setPorts(ArrayList<Integer> ports) {
+        this.ports = ports;
     }
 
     public Type getType() {
