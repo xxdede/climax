@@ -506,7 +506,7 @@ public class Operation {
                 if (cp.getIntakeDetector() != null) {
 
                     final boolean intakeIsOpen = cp.getIntakeDetector().isOpen();
-                    boolean intakeShouldBeOpen = false;
+                    Boolean intakeShouldBeOpen = null;
 
                     if (desired != null && desired.getStatus() == Status.ON &&
                             (Illness.LOWER_CO2_NEEDED.equals(result) || Illness.BORDER_CO2.equals(result))) {
@@ -535,12 +535,12 @@ public class Operation {
                         final WemoDeviceConfig wdc = (WemoDeviceConfig) atp;
                         final WemoManager wm = new WemoManager(wdc);
 
-                        if (!intakeIsOpen && intakeShouldBeOpen) {
+                        if (!intakeIsOpen && Boolean.TRUE.equals(intakeShouldBeOpen)) {
 
                             final boolean done = wm.setBinaryState(1);
                             l.debug("Trying to open intake \"{}\" on \"{}\"... {}!", atp.getName(), devName, (done ? "done" : "NOT done"));
 
-                        } else if (intakeIsOpen && !intakeShouldBeOpen) {
+                        } else if (intakeIsOpen && Boolean.FALSE.equals(intakeShouldBeOpen)) {
 
                             final boolean done = wm.setBinaryState(0);
                             l.debug("Trying to close intake \"{}\" on \"{}\"... {}!", atp.getName(), devName, (done ? "done" : "NOT done"));
@@ -551,7 +551,7 @@ public class Operation {
                         }
 
                         // XXX: check for duplicates
-                        iss.put(wdc.getName(), new Pair<>(new IntakeStatus(wdc.getDbName(), normalizedNowTs, -1, intakeIsOpen), new IntakeStatus(wdc.getDbName(), normalizedNowTs, 0, intakeShouldBeOpen)));
+                        iss.put(wdc.getName(), new Pair<>(new IntakeStatus(wdc.getDbName(), normalizedNowTs, -1, intakeIsOpen), new IntakeStatus(wdc.getDbName(), normalizedNowTs, 0, (intakeShouldBeOpen != null ? intakeShouldBeOpen : intakeIsOpen))));
                     }
                     else {
 
