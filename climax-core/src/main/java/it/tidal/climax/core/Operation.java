@@ -6,6 +6,7 @@ import it.tidal.climax.config.Config.Variant;
 import it.tidal.climax.config.GenericDeviceConfig.OperationMode;
 import it.tidal.climax.database.mapping.EnergyStatus;
 import it.tidal.climax.database.mapping.HVACStatus;
+import it.tidal.climax.database.mapping.IntakeStatus;
 import it.tidal.climax.database.mapping.RoomStatus;
 import it.tidal.climax.extensions.data.ClimaxPack;
 import it.tidal.climax.extensions.data.CoolAutomation;
@@ -119,6 +120,7 @@ public class Operation {
         final HashMap<String, ClimaxPack> cps = new HashMap<>();
 
         final HashMap<String, RoomStatus> rss = new HashMap<>();
+        final HashMap<String, Pair<IntakeStatus, IntakeStatus>> iss = new HashMap<>(); // intake status before, intake status after
 
         // Energy statuses
         l.debug("Retrieving energy status from db and solaredge...");
@@ -501,10 +503,30 @@ public class Operation {
                 }
 
                 // Check if intake is also actuator (to open/close it)
-                if (desired != null && cp.getIntakeDetector() != null) {
+                if (cp.getIntakeDetector() != null) {
 
                     final boolean intakeIsOpen = cp.getIntakeDetector().isOpen();
-                    boolean intakeShouldBeOpen = (desired.getStatus() == Status.ON && (Illness.LOWER_CO2_NEEDED.equals(result) || Illness.BORDER_CO2.equals(result)));
+                    boolean intakeShouldBeOpen = false;
+
+                    if (desired != null && desired.getStatus() == Status.ON &&
+                            (Illness.LOWER_CO2_NEEDED.equals(result) || Illness.BORDER_CO2.equals(result))) {
+
+                        // If there's too much co2 open the intake
+                        intakeShouldBeOpen = true;
+                    }
+                    else {
+
+                        final AdvancedTemperatureSensor outside = cp.getOutsideStatus();
+                        final AdvancedTemperatureSensor inside = cp.getRoomStatus();
+
+                        if (outside != null && inside != null &&
+                            outside.getPerceived() > inside.getPerceived() + 2) {
+
+                            // If perceived outside is more than 2 degree high close the intake
+                            intakeShouldBeOpen = false;
+                        }
+                    }
+                    // Otherwise leave the intake as is
 
                     final DeviceFamiliable atp = ConfigManager.findDevice(cfg, cp.getIntakeDetector().getDetectorName());
 
@@ -516,14 +538,29 @@ public class Operation {
                         if (!intakeIsOpen && intakeShouldBeOpen) {
 
                             final boolean done = wm.setBinaryState(1);
-                            l.debug("Trying to open intake \"{}\"... {}!", atp.getName(), (done ? "done" : "NOT done"));
+                            l.debug("Trying to open intake \"{}\" on \"{}\"... {}!", atp.getName(), devName, (done ? "done" : "NOT done"));
 
                         } else if (intakeIsOpen && !intakeShouldBeOpen) {
 
                             final boolean done = wm.setBinaryState(0);
-                            l.debug("Trying to close intake \"{}\"... {}!", atp.getName(), (done ? "done" : "NOT done"));
+                            l.debug("Trying to close intake \"{}\" on \"{}\"... {}!", atp.getName(), devName, (done ? "done" : "NOT done"));
                         }
+                        else {
+
+                            l.debug("Not touching intake \"{}\" on \"{}\"... it is {}.", atp.getName(), devName, (intakeIsOpen ? "open" : "closed"));
+                        }
+
+                        // XXX: check for duplicates
+                        iss.put(wdc.getName(), new Pair<>(new IntakeStatus(wdc.getDbName(), normalizedNowTs, -1, intakeIsOpen), new IntakeStatus(wdc.getDbName(), normalizedNowTs, 0, intakeShouldBeOpen)));
                     }
+                    else {
+
+                        l.debug("Intake configured for \"{}\" is not actuable.", devName);
+                    }
+                }
+                else {
+
+                    l.debug("No intake configured for \"{}\".", devName);
                 }
             }
         }
@@ -559,7 +596,12 @@ public class Operation {
                 dbm.insertHVACStatus(statusPost);
             }
 
-            // TODO: save all WeMos
+            // All Intakes
+            for (Map.Entry<String, Pair<IntakeStatus, IntakeStatus>> entry : iss.entrySet()) {
+
+                dbm.insertIntakeStatus(entry.getValue().getValue0());
+                dbm.insertIntakeStatus(entry.getValue().getValue1());
+            }
 
             // All SolarEdge
             if (latestEs != null) {

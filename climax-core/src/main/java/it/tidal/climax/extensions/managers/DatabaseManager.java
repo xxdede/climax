@@ -3,6 +3,7 @@ package it.tidal.climax.extensions.managers;
 import it.tidal.climax.config.MySQLConfig;
 import it.tidal.climax.database.mapping.EnergyStatus;
 import it.tidal.climax.database.mapping.HVACStatus;
+import it.tidal.climax.database.mapping.IntakeStatus;
 import it.tidal.climax.database.mapping.RoomStatus;
 import it.tidal.climax.extensions.data.SolarEdge;
 import it.tidal.climax.extensions.data.SolarEdgeEnergy;
@@ -238,6 +239,30 @@ public class DatabaseManager {
             //l.debug(sql.toString());
             persist.execute(sql.toString());
         }
+    }
+
+    public void insertIntakeStatus(IntakeStatus status) {
+
+        if (persist == null) {
+            return;
+        }
+
+        StringBuilder sql = new StringBuilder(64);
+        StringBuilder values = new StringBuilder(64);
+
+        sql.append("INSERT INTO `").append(Utility.sluggize(status.getName()))
+                .append("` (`time_sec`,`offset`,`open`");
+
+        values.append("(").append(status.getTimestamp()).append(",")
+                .append(status.getOffset()).append(",")
+                .append(status.isOpen() ? "1" : "0");
+
+        sql.append(")");
+        values.append(")");
+        sql.append(" VALUES ").append(values);
+
+        //l.debug(sql.toString());
+        persist.execute(sql.toString());
     }
 
     public TreeMap<LocalDateTime, EnergyStatus> retrieveLastEnergyStatus(int count) {
