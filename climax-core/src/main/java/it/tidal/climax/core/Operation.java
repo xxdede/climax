@@ -500,7 +500,31 @@ public class Operation {
                     cam.disconnect();
                 }
 
-                // TODO: execute also actuator update
+                // Check if intake is also actuator (to open/close it)
+                if (desired != null && cp.getIntakeDetector() != null) {
+
+                    final boolean intakeIsOpen = cp.getIntakeDetector().isOpen();
+                    boolean intakeShouldBeOpen = (desired.getStatus() == Status.ON && (Illness.LOWER_CO2_NEEDED.equals(result) || Illness.BORDER_CO2.equals(result)));
+
+                    final DeviceFamiliable atp = ConfigManager.findDevice(cfg, cp.getIntakeDetector().getDetectorName());
+
+                    if (atp instanceof WemoDeviceConfig) {
+
+                        final WemoDeviceConfig wdc = (WemoDeviceConfig) atp;
+                        final WemoManager wm = new WemoManager(wdc);
+
+                        if (!intakeIsOpen && intakeShouldBeOpen) {
+
+                            final boolean done = wm.setBinaryState(1);
+                            l.debug("Trying to open intake \"{}\"... {}!", atp.getName(), (done ? "done" : "NOT done"));
+
+                        } else if (intakeIsOpen && !intakeShouldBeOpen) {
+
+                            final boolean done = wm.setBinaryState(0);
+                            l.debug("Trying to close intake \"{}\"... {}!", atp.getName(), (done ? "done" : "NOT done"));
+                        }
+                    }
+                }
             }
         }
 
@@ -534,6 +558,8 @@ public class Operation {
                 dbm.insertHVACStatus(statusPre);
                 dbm.insertHVACStatus(statusPost);
             }
+
+            // TODO: save all WeMos
 
             // All SolarEdge
             if (latestEs != null) {

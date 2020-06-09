@@ -20,7 +20,7 @@ public class Application {
     private static Log l = Log.prepare(Application.class.getSimpleName());
 
     public static final String TMP_CONFIG_PATH = "/tmp/climax.conf";
-    public static final String APPLICATION_BUILD = "2020-05-25";
+    public static final String APPLICATION_BUILD = "2020-06-09";
 
     public static final LocalDateTime NOW = LocalDateTime.now();
 
@@ -76,7 +76,7 @@ public class Application {
 
         if (prg == null) {
 
-            l.error("Unkwnown program... bailing out!");
+            l.error("Unknown program... bailing out!");
             return;
         } else {
 

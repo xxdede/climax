@@ -3,6 +3,9 @@ package it.tidal.climax.extensions.managers;
 import it.tidal.climax.config.WemoDeviceConfig;
 import it.tidal.logging.Log;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.http.HttpEntity;
@@ -22,8 +25,11 @@ public class WemoManager {
 
     private static Log l = Log.prepare(WemoManager.class.getSimpleName());
 
-    private final String BINARY_STATE_ACTION = "\"urn:Belkin:service:basicevent:1#GetBinaryState\"";
-    private final String BINARY_STATE_DATA = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:GetBinaryState xmlns:u=\"urn:Belkin:service:basicevent:1\"><BinaryState>1</BinaryState></u:GetBinaryState></s:Body></s:Envelope>";
+    private final String GET_BINARY_STATE_ACTION = "\"urn:Belkin:service:basicevent:1#GetBinaryState\"";
+    private final String SET_BINARY_STATE_ACTION = "\"urn:Belkin:service:basicevent:1#SetBinaryState\"";
+    private final String GET_BINARY_STATE_DATA = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:GetBinaryState xmlns:u=\"urn:Belkin:service:basicevent:1\"><BinaryState>1</BinaryState></u:GetBinaryState></s:Body></s:Envelope>";
+    private final String SET_BINARY_STATE_DATA_ON  = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:SetBinaryState xmlns:u=\"urn:Belkin:service:basicevent:1\"><BinaryState>1</BinaryState></u:SetBinaryState></s:Body></s:Envelope>";
+    private final String SET_BINARY_STATE_DATA_OFF = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:SetBinaryState xmlns:u=\"urn:Belkin:service:basicevent:1\"><BinaryState>0</BinaryState></u:SetBinaryState></s:Body></s:Envelope>";
 
     private final String INSIGHT_PARAMS_ACTION = "\"urn:Belkin:service:insight:1#GetInsightParams\"";
     private final String INSIGHT_PARAMS_DATA = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:GetInsightParams xmlns:u=\"urn:Belkin:service:insight:1\"></u:GetInsightParams></s:Body></s:Envelope>";
@@ -36,23 +42,40 @@ public class WemoManager {
 
     WemoDevice device;
     String host;
-    int port;
+    ArrayList<Integer> ports;
+    Integer preferredPort;
 
-    public WemoManager(WemoDevice device, String host, int port) {
+    public WemoManager(WemoDevice device, String host, ArrayList<Integer> ports) {
 
         this.device = device;
         this.host = host;
-        this.port = port;
-    }
-
-    public WemoManager(WemoDevice device, String host) {
-
-        this(device, host, 49153);
+        this.ports = new ArrayList<>(ports);
+        this.preferredPort = null;
     }
 
     public WemoManager(WemoDeviceConfig config) {
 
-        this(config.getType().getWemoDevice(), config.getIpAddress(), config.getPort());
+        this(config.getType().getWemoDevice(), config.getIpAddress(), config.getPorts());
+    }
+
+    private Integer getPortToTry(HashSet<Integer> triedPorts) {
+
+        if (triedPorts == null)
+            triedPorts = new HashSet<>(0);
+
+        if (this.preferredPort != null && !triedPorts.contains(this.preferredPort))
+            return this.preferredPort;
+
+        if (this.ports == null)
+            return null;
+
+        for (Integer port : this.ports) {
+            if (!triedPorts.contains(port)) {
+                return port;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -66,37 +89,64 @@ public class WemoManager {
         CloseableHttpResponse res = null;
         String value = null;
 
-        try {
+        final HashSet<Integer> triedPorts = new HashSet<>();
+        boolean finished = false;
+        Integer currentPort = getPortToTry(triedPorts);
 
-            HttpPost httpPost = new HttpPost("http://"
-                    + this.host + ":"
-                    + this.port
-                    + "/upnp/control/basicevent1");
+        do {
 
-            httpPost.setHeader("Content-type", "text/xml; charset=\"utf-8\"");
-            httpPost.setHeader("SOAPACTION", BINARY_STATE_ACTION);
+            if (currentPort == null) {
 
-            httpPost.setEntity(new ByteArrayEntity(
-                    BINARY_STATE_DATA.getBytes("UTF8")));
+                finished = true;
+                break;
+            }
 
-            res = HttpClients.createDefault().execute(httpPost);
+            try {
 
-            final HttpEntity entity = res.getEntity();
-            value = EntityUtils.toString(entity, "UTF8");
-            EntityUtils.consume(entity);
-        } catch (IOException | ParseException ex) {
+                HttpPost httpPost = new HttpPost("http://"
+                        + this.host + ":"
+                        + currentPort
+                        + "/upnp/control/basicevent1");
 
-            l.error("Error while retrieving binary state.", ex);
-        } finally {
+                httpPost.setHeader("Content-type", "text/xml; charset=\"utf-8\"");
+                httpPost.setHeader("SOAPACTION", GET_BINARY_STATE_ACTION);
 
-            if (res != null) {
+                httpPost.setEntity(new ByteArrayEntity(
+                        GET_BINARY_STATE_DATA.getBytes("UTF8")));
 
-                try {
-                    res.close();
-                } catch (Exception ex) {
+                res = HttpClients.createDefault().execute(httpPost);
+
+                final HttpEntity entity = res.getEntity();
+                value = EntityUtils.toString(entity, "UTF8");
+                EntityUtils.consume(entity);
+
+                finished = true;
+            }
+            catch(ConnectException ex) {
+
+                triedPorts.add(currentPort);
+                currentPort = getPortToTry(triedPorts);
+            }
+            catch (IOException | ParseException exx) {
+
+                l.error("Error while retrieving binary state.", exx);
+
+            }
+            finally {
+
+                if (currentPort != null)
+                    this.preferredPort = currentPort;
+
+                if (res != null) {
+
+                    try {
+                        res.close();
+                    } catch (Exception ex) {
+                    }
                 }
             }
-        }
+
+        } while (finished != true);
 
         if (value != null) {
 
@@ -109,6 +159,88 @@ public class WemoManager {
         }
 
         return null;
+    }
+
+    /**
+     * Set the state of the Wemo device. An integer as defined in Wemo specs.
+     *
+     * @param state 0 means OFF, 1 means ON
+     * @return true if communication was successful
+     */
+    public boolean setBinaryState(Integer state) {
+
+        CloseableHttpResponse res = null;
+        String value = null;
+
+        final HashSet<Integer> triedPorts = new HashSet<>();
+        boolean finished = false;
+        Integer currentPort = getPortToTry(triedPorts);
+
+        do {
+
+            if (currentPort == null) {
+
+                finished = true;
+                break;
+            }
+
+            try {
+
+                HttpPost httpPost = new HttpPost("http://"
+                        + this.host + ":"
+                        + currentPort
+                        + "/upnp/control/basicevent1");
+
+                httpPost.setHeader("Content-type", "text/xml; charset=\"utf-8\"");
+                httpPost.setHeader("SOAPACTION", SET_BINARY_STATE_ACTION);
+
+                httpPost.setEntity(new ByteArrayEntity(
+                        (state == 1 ? SET_BINARY_STATE_DATA_ON : SET_BINARY_STATE_DATA_OFF).getBytes("UTF8")));
+
+                res = HttpClients.createDefault().execute(httpPost);
+
+                final HttpEntity entity = res.getEntity();
+                value = EntityUtils.toString(entity, "UTF8");
+                EntityUtils.consume(entity);
+
+                finished = true;
+            }
+            catch(ConnectException ex) {
+
+                triedPorts.add(currentPort);
+                currentPort = getPortToTry(triedPorts);
+            }
+            catch (IOException | ParseException ex) {
+
+                l.error("Error while setting binary state.", ex);
+            }
+            finally {
+
+                if (currentPort != null)
+                    this.preferredPort = currentPort;
+
+                if (res != null) {
+
+                    try {
+                        res.close();
+                    } catch (Exception ex) {
+                    }
+                }
+            }
+
+        } while (finished != true);
+
+        if (value != null) {
+
+            Pattern p = Pattern.compile("<BinaryState>(\\d?)</BinaryState>");
+            Matcher m = p.matcher(value);
+
+            if (m.find()) {
+                return (Integer.parseInt(m.group(1)) == state);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -141,37 +273,63 @@ public class WemoManager {
         CloseableHttpResponse res = null;
         String value = null;
 
-        try {
+        final HashSet<Integer> triedPorts = new HashSet<>();
+        boolean finished = false;
+        Integer currentPort = getPortToTry(triedPorts);
 
-            HttpPost httpPost = new HttpPost("http://"
-                    + this.host + ":"
-                    + this.port
-                    + "/upnp/control/insight1");
+        do {
 
-            httpPost.setHeader("Content-type", "text/xml; charset=\"utf-8\"");
-            httpPost.setHeader("SOAPACTION", INSIGHT_PARAMS_ACTION);
+            if (currentPort == null) {
 
-            httpPost.setEntity(new ByteArrayEntity(
-                    INSIGHT_PARAMS_DATA.getBytes("UTF8")));
+                finished = true;
+                break;
+            }
 
-            res = HttpClients.createDefault().execute(httpPost);
+            try {
 
-            final HttpEntity entity = res.getEntity();
-            value = EntityUtils.toString(entity, "UTF8");
-            EntityUtils.consume(entity);
-        } catch (IOException | ParseException ex) {
+                HttpPost httpPost = new HttpPost("http://"
+                        + this.host + ":"
+                        + currentPort
+                        + "/upnp/control/insight1");
 
-            l.error("Error while retrieving insight params.", ex);
-        } finally {
+                httpPost.setHeader("Content-type", "text/xml; charset=\"utf-8\"");
+                httpPost.setHeader("SOAPACTION", INSIGHT_PARAMS_ACTION);
 
-            if (res != null) {
+                httpPost.setEntity(new ByteArrayEntity(
+                        INSIGHT_PARAMS_DATA.getBytes("UTF8")));
 
-                try {
-                    res.close();
-                } catch (Exception ex) {
+                res = HttpClients.createDefault().execute(httpPost);
+
+                final HttpEntity entity = res.getEntity();
+                value = EntityUtils.toString(entity, "UTF8");
+                EntityUtils.consume(entity);
+
+                finished = true;
+            }
+            catch(ConnectException ex) {
+
+                triedPorts.add(currentPort);
+                currentPort = getPortToTry(triedPorts);
+            }
+            catch (IOException | ParseException ex) {
+
+                l.error("Error while retrieving insight params.", ex);
+            }
+            finally {
+
+                if (currentPort != null)
+                    this.preferredPort = currentPort;
+
+                if (res != null) {
+
+                    try {
+                        res.close();
+                    } catch (Exception ex) {
+                    }
                 }
             }
-        }
+
+        } while (finished != true);
 
         if (value != null) {
 
