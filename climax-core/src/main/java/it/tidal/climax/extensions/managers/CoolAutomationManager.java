@@ -2,6 +2,7 @@ package it.tidal.climax.extensions.managers;
 
 import it.tidal.climax.config.CoolAutomationDeviceConfig;
 import it.tidal.climax.extensions.data.CoolAutomation;
+import it.tidal.config.utils.Utility;
 import it.tidal.logging.Log;
 import java.io.IOException;
 import java.io.InputStream;
@@ -337,8 +338,8 @@ public class CoolAutomationManager {
         if (prevData == null || newData == null)
             return null;
 
-        int delta = (int) Math.round(prevData.getSetTemperature() - newData.getSetTemperature());
-
+        int delta = (int) Math.round(newData.getSetTemperature() - newData.getRoomTemperature());
+        
         return setAll(prevData, newData.getOpMode(), newData.getFanSpeed(), newData.getStatus(), delta);
     }
 }

@@ -20,7 +20,7 @@ public class Application {
     private static Log l = Log.prepare(Application.class.getSimpleName());
 
     public static final String TMP_CONFIG_PATH = "/tmp/climax.conf";
-    public static final String APPLICATION_BUILD = "2020-06-09";
+    public static final String APPLICATION_BUILD = "2020-06-24";
 
     public static final LocalDateTime NOW = LocalDateTime.now();
 

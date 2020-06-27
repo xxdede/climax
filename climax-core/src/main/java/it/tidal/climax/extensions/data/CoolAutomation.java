@@ -356,6 +356,8 @@ public class CoolAutomation implements Serializable {
                 + ", mode: " + opMode
                 + ", set: " + Utility.americanDoubleFormatter
                         .format(setTemperature) + "°"
+                + ", room: " + Utility.americanDoubleFormatter
+                        .format(roomTemperature) + "°"
                 + ", fan: " + fanSpeed;
     }
 

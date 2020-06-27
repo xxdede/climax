@@ -200,7 +200,7 @@ public class Operation {
                 RoomStatus worstCo2 = null;
                 String worstCo2DbName = null;
 
-                // If there's more than one inside temperature provider we'll keep the worst ones
+                // If there's more than one inside temperature provider we'll keep the worst one
                 for (DeviceFamiliable tempItp : itps) {
 
                     final RoomStatus tempRoomStatus = nam.getData(tempItp.getName()).toRoomStatus(normalizedNowTs);
@@ -412,13 +412,18 @@ public class Operation {
             // Check if device will be eager
             if (desired != null && desired.getStatus() == Status.ON && desired.getOpMode() != OpMode.FAN) {
 
-                    eagerDevices.add(devName);
+                l.debug("Eager device \"{}\"!!!", current.getName());
+                eagerDevices.add(devName);
             }
 
             // Store all results
-            environment.put(devName, new Sextet<>(cadc, current, desired, desiredOpMode, cp, (result != null ? result.getValue1() : null)));
+            final String motivation = (result != null ? result.getValue1() : null);
+            environment.put(devName, new Sextet<>(cadc, current, desired, desiredOpMode, cp, motivation));
 
-            l.debug("Desired: " + (desired != null ? desired.getDescription() : current.getDescription() + " (no changes)") + ".");
+            if (desired != null)
+                l.debug("Desired: " + desired.getDescription() + " (" + (motivation != null ? motivation : "unmotivated") + ").");
+            else
+                l.debug("Desired is not set: " + current.getDescription() + ".");
         }
 
         // Checking if there are too eager devices
@@ -957,7 +962,7 @@ public class Operation {
                             .changeDelta(0.0)
                             .changeFanSpeed(FanSpeed.MEDIUM);
                 } else {
-                    // Fan, 0, MEDIUM
+                    // Fan, 0, LOW
                     desired = current.duplicate()
                             .changeStatus(Status.ON)
                             .changeOpMode(OpMode.FAN)
