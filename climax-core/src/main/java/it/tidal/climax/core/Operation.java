@@ -429,7 +429,7 @@ public class Operation {
         // Checking if there are too eager devices
         final HashSet<String> limitedDevices = new HashSet<>();
 
-        if (programConfig.getMaxEagerDevices() > eagerDevices.size()) {
+        if (eagerDevices.size() > programConfig.getMaxEagerDevices()) {
 
             int deviceToLimit = eagerDevices.size() - programConfig.getMaxEagerDevices();
 
@@ -440,14 +440,24 @@ public class Operation {
 
                     final Sextet<CoolAutomationDeviceConfig, CoolAutomation, CoolAutomation, OperationMode, ClimaxPack, String> tuple = environment.get(devName);
                     final OperationMode desiredOpMode = tuple.getValue3();
+                    final CoolAutomation desired = tuple.getValue2();
+                    boolean willLimit = false;
 
-                    if (deviceToLimit > 0 &&
-                            ((desiredOpMode != OperationMode.OPERATE_IF_ON) ||
-                             (phase > 1 && Math.random() > 0.4) ||
-                              phase == 99)
-                            ) {
+                    if (deviceToLimit <= 0)
+                        break;
+                    else if (desiredOpMode == OperationMode.DISABLED || desired.getStatus() == Status.OFF)
+                        continue;
+                    else if (phase < 5 && desiredOpMode != OperationMode.OPERATE_AUTO && desiredOpMode != OperationMode.OPERATE_IF_ON)
+                        willLimit = true;
+                    else if (phase < 10 && desiredOpMode != OperationMode.OPERATE_AUTO)
+                        willLimit = true;
+                    else if (phase >= 10 && phase < 99 && Math.random() > 0.4)
+                        willLimit = true;
+                    else if (phase == 99)
+                        willLimit = true;
 
-                        final CoolAutomation desired = tuple.getValue2();
+                    if (willLimit) {
+
                         desired.setOpMode(OpMode.FAN);
                         desired.setFanSpeed(FanSpeed.LOW);
 
